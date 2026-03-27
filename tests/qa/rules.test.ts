@@ -52,7 +52,7 @@ describe('runAllRules()', () => {
       variables: [],  // lastName missing from template-level
     };
     const issues = runAllRules(inconsistent);
-    expect(issues.some(i => i.severity === 'warning' && i.code === 'VARIABLE_INCONSISTENCY')).toBe(true);
+    expect(issues.filter(i => i.code === 'VARIABLE_INCONSISTENCY')).toHaveLength(1);
   });
 
   it('returns warning when template variable is not referenced in any block', () => {
@@ -61,6 +61,7 @@ describe('runAllRules()', () => {
       content_blocks: [
         { id: 'test-01:headline:0', type: 'headline', order: 0, text: 'Hello', variables: [], condition_ids: [] },
       ],
+      ui_modules: [],
       variables: [{ token: '{{orphanToken}}', type: 'string' }],
     };
     const issues = runAllRules(stale);
@@ -75,7 +76,7 @@ describe('runAllRules()', () => {
       ],
     };
     const issues = runAllRules(broken);
-    expect(issues.some(i => i.severity === 'warning' && i.code === 'DANGLING_CONTENT_BLOCK_REF')).toBe(true);
+    expect(issues.filter(i => i.code === 'DANGLING_CONTENT_BLOCK_REF')).toHaveLength(1);
   });
 
   it('returns QaIssue objects with code, severity, and message', () => {

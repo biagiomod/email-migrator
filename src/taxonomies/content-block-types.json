@@ -1,0 +1,9 @@
+{
+  "subject_line": "Email subject line",
+  "preheader": "Preheader / preview text shown in inbox",
+  "headline": "Primary heading inside the email body",
+  "body_text": "Main copy paragraphs",
+  "cta": "Call-to-action text and link",
+  "disclaimer": "Legal or compliance copy",
+  "footer_content": "Footer text — contact info, unsubscribe, address"
+}

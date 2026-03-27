@@ -12,15 +12,27 @@ export interface ReviewServerOptions {
 
 function loadSpecs(specsDir: string): CanonicalTemplate[] {
   if (!fs.existsSync(specsDir)) return [];
-  return fs.readdirSync(specsDir)
-    .filter(f => f.endsWith('.json'))
-    .sort()
-    .map(f => JSON.parse(fs.readFileSync(path.join(specsDir, f), 'utf-8')) as CanonicalTemplate);
+  const results: CanonicalTemplate[] = [];
+  for (const f of fs.readdirSync(specsDir).filter(f => f.endsWith('.json')).sort()) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(path.join(specsDir, f), 'utf-8'));
+      results.push(parsed as CanonicalTemplate);
+    } catch (err) {
+      console.error(`[review] Failed to load spec file "${f}": ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  return results;
 }
 
 function saveSpec(specsDir: string, template: CanonicalTemplate): void {
   const specPath = path.join(specsDir, `${template.template_id}.json`);
   fs.writeFileSync(specPath, JSON.stringify(template, null, 2), 'utf-8');
+}
+
+function safeSpecPath(specsDir: string, id: string): string | null {
+  const resolved = path.resolve(specsDir, `${id}.json`);
+  if (!resolved.startsWith(path.resolve(specsDir) + path.sep)) return null;
+  return resolved;
 }
 
 export function startReviewServer(options: ReviewServerOptions): void {
@@ -59,19 +71,30 @@ export function startReviewServer(options: ReviewServerOptions): void {
 
   // GET /api/templates/:id — full spec for one template
   app.get('/api/templates/:id', (req, res) => {
-    const specPath = path.join(specsDir, `${req.params.id}.json`);
+    const specPath = safeSpecPath(specsDir, req.params.id);
+    if (!specPath) return res.status(400).json({ error: 'Invalid id' });
     if (!fs.existsSync(specPath)) {
       return res.status(404).json({ error: 'Template not found' });
     }
-    res.json(JSON.parse(fs.readFileSync(specPath, 'utf-8')));
+    try {
+      res.json(JSON.parse(fs.readFileSync(specPath, 'utf-8')));
+    } catch {
+      res.status(500).json({ error: 'Failed to read spec' });
+    }
   });
 
   // POST /api/templates/:id/approve — approve a template
   app.post('/api/templates/:id/approve', (req, res) => {
-    const specPath = path.join(specsDir, `${req.params.id}.json`);
+    const specPath = safeSpecPath(specsDir, req.params.id);
+    if (!specPath) return res.status(400).json({ error: 'Invalid id' });
     if (!fs.existsSync(specPath)) return res.status(404).json({ error: 'Not found' });
 
-    const spec: CanonicalTemplate = JSON.parse(fs.readFileSync(specPath, 'utf-8'));
+    let spec: CanonicalTemplate;
+    try {
+      spec = CanonicalTemplate.parse(JSON.parse(fs.readFileSync(specPath, 'utf-8')));
+    } catch {
+      return res.status(500).json({ error: 'Failed to read spec' });
+    }
     const updated: CanonicalTemplate = {
       ...spec,
       mapping_results: spec.mapping_results.map(r => ({ ...r, review_status: 'approved' as const })),
@@ -82,10 +105,16 @@ export function startReviewServer(options: ReviewServerOptions): void {
 
   // POST /api/templates/:id/flag — flag for revision
   app.post('/api/templates/:id/flag', (req, res) => {
-    const specPath = path.join(specsDir, `${req.params.id}.json`);
+    const specPath = safeSpecPath(specsDir, req.params.id);
+    if (!specPath) return res.status(400).json({ error: 'Invalid id' });
     if (!fs.existsSync(specPath)) return res.status(404).json({ error: 'Not found' });
 
-    const spec: CanonicalTemplate = JSON.parse(fs.readFileSync(specPath, 'utf-8'));
+    let spec: CanonicalTemplate;
+    try {
+      spec = CanonicalTemplate.parse(JSON.parse(fs.readFileSync(specPath, 'utf-8')));
+    } catch {
+      return res.status(500).json({ error: 'Failed to read spec' });
+    }
     const { note } = req.body as { note?: string };
     const updated: CanonicalTemplate = {
       ...spec,

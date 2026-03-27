@@ -86,7 +86,8 @@ function esc(s) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 async function loadTemplates() {
@@ -129,6 +130,7 @@ async function selectTemplate(id) {
   selectedId = id;
   renderSidebar();
   const res = await fetch('/api/templates/' + id);
+  if (!res.ok) { alert('Failed to load template: ' + res.status); return; }
   const spec = await res.json();
   renderMain(spec);
 }
@@ -216,6 +218,7 @@ async function flagTemplate(id) {
 async function batchApprove() {
   const res = await fetch('/api/batch-approve', { method: 'POST' });
   const data = await res.json();
+  if (!res.ok) { alert('Batch approve failed: ' + (data.error || res.status)); return; }
   alert('Batch approved ' + data.approved + ' template(s).');
   await loadTemplates();
 }

@@ -1,5 +1,17 @@
 node_modules/
 dist/
+
+# Generated pipeline output
 specs/
+demo/specs/
+
+# Tool internals
 .superpowers/
+.claude/
+
+# Logs and debug files
 *.log
+test-debug.js
+
+# OS files
+.DS_Store

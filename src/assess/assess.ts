@@ -13,6 +13,7 @@ export function computeStatus(
   issues: QaIssue[],
 ): 'ready' | 'needs_review' | 'blocked' {
   if (issues.some(i => i.severity === 'error')) return 'blocked';
+  if (template.mapping_results.length === 0) return 'needs_review';
 
   const allExact = template.mapping_results.every(
     r => r.match_type === 'exact' && r.confidence >= AUTO_APPROVE_THRESHOLD,
@@ -25,6 +26,14 @@ export function computeStatus(
   return 'ready';
 }
 
+/**
+ * Runs mapper + QA rules on each template, computes status, and writes
+ * one migration spec JSON to specsDir per template.
+ *
+ * ASSESS is the only pipeline stage that writes to disk.
+ * Any write failure throws and aborts the batch — callers should not
+ * rely on the return value if an error is caught.
+ */
 export function assess(templates: CanonicalTemplate[], specsDir: string): CanonicalTemplate[] {
   fs.mkdirSync(specsDir, { recursive: true });
 

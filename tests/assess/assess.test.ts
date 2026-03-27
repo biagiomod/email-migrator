@@ -65,6 +65,13 @@ describe('assess()', () => {
     fs.rmSync(specsDir, { recursive: true });
   });
 
+  it('creates specsDir if it does not exist', () => {
+    const nonExistentDir = path.join(specsDir, 'nested', 'subdir');
+    expect(fs.existsSync(nonExistentDir)).toBe(false);
+    assess([baseTemplate], nonExistentDir);
+    expect(fs.existsSync(nonExistentDir)).toBe(true);
+  });
+
   it('writes one JSON file per template to specsDir', () => {
     const templates = [baseTemplate, { ...baseTemplate, template_id: 'test-02', source_file: 'test2.html' }];
     assess(templates, specsDir);

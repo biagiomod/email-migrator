@@ -81,12 +81,25 @@
 let templates = [];
 let selectedId = null;
 
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 async function loadTemplates() {
-  const res = await fetch('/api/templates');
-  templates = await res.json();
-  renderSidebar();
-  updateSummary();
-  if (selectedId) renderMain(templates.find(t => t.template_id === selectedId));
+  try {
+    const res = await fetch('/api/templates');
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    templates = await res.json();
+    renderSidebar();
+    updateSummary();
+    if (selectedId) renderMain(templates.find(function(t) { return t.template_id === selectedId; }));
+  } catch (err) {
+    document.getElementById('sidebar').innerHTML = '<div class="sidebar-empty">Failed to load templates.<br>' + esc(String(err)) + '</div>';
+  }
 }
 
 function updateSummary() {
@@ -105,8 +118,8 @@ function renderSidebar() {
   }
   el.innerHTML = templates.map(t =>
     '<div class="sidebar-item ' + (t.template_id === selectedId ? 'active' : '') + '" onclick="selectTemplate(\'' + t.template_id + '\')">' +
-    '<h3>' + t.template_id + '</h3>' +
-    '<p><span class="badge badge-' + t.status + '">' + t.status.replace('_', ' ') + '</span>' +
+    '<h3>' + esc(t.template_id) + '</h3>' +
+    '<p><span class="badge badge-' + esc(t.status) + '">' + esc(t.status).replace('_', ' ') + '</span>' +
     '&nbsp;' + t.content_blocks_count + ' blocks \u00b7 ' + t.mapping_results.length + ' mappings</p>' +
     '</div>'
   ).join('');
@@ -126,12 +139,13 @@ function renderMain(spec) {
 
   const blocksHtml = spec.content_blocks.map(function(b) {
     const tokensHtml = b.variables.length
-      ? '<div style="margin-top:4px">' + b.variables.map(function(v) { return '<span class="token">' + v + '</span>'; }).join(' ') + '</div>'
+      ? '<div style="margin-top:4px">' + b.variables.map(function(v) { return '<span class="token">' + esc(v) + '</span>'; }).join(' ') + '</div>'
       : '';
-    const urlHtml = b.url ? '<div style="margin-top:2px;font-size:0.75rem;color:#0052CC">\u2197 ' + b.url + '</div>' : '';
+    const urlHtml = b.url ? '<div style="margin-top:2px;font-size:0.75rem;color:#0052CC">\u2197 ' + esc(b.url) + '</div>' : '';
+    const bText = esc(b.text);
     return '<div class="taxonomy-item">' +
-      '<div class="label">' + b.type + ' \u00b7 order ' + b.order + '</div>' +
-      '<div class="value">' + b.text.substring(0, 80) + (b.text.length > 80 ? '\u2026' : '') + '</div>' +
+      '<div class="label">' + esc(b.type) + ' \u00b7 order ' + esc(b.order) + '</div>' +
+      '<div class="value">' + bText.substring(0, 80) + (bText.length > 80 ? '\u2026' : '') + '</div>' +
       tokensHtml + urlHtml +
       '</div>';
   }).join('');
@@ -141,29 +155,29 @@ function renderMain(spec) {
     const cls = pct === 100 ? 'conf-high' : pct >= 50 ? 'conf-mid' : 'conf-low';
     const statusBadge = r.review_status === 'approved' ? 'ready' : 'needs_review';
     return '<div class="mapping-row">' +
-      '<div><div style="font-weight:500">' + r.component_id + '</div>' +
-      '<div style="font-size:0.75rem;color:#888">' + r.reason + '</div></div>' +
-      '<div style="font-size:0.8rem">' + (r.target_module || '\u2014') + '</div>' +
+      '<div><div style="font-weight:500">' + esc(r.component_id) + '</div>' +
+      '<div style="font-size:0.75rem;color:#888">' + esc(r.reason) + '</div></div>' +
+      '<div style="font-size:0.8rem">' + (r.target_module ? esc(r.target_module) : '\u2014') + '</div>' +
       '<div><div class="conf-bar"><div class="conf-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
       '<div style="font-size:0.7rem;text-align:right;color:#666">' + pct + '%</div></div>' +
-      '<div><span class="badge badge-' + statusBadge + '">' + r.review_status + '</span></div>' +
+      '<div><span class="badge badge-' + esc(statusBadge) + '">' + esc(r.review_status) + '</span></div>' +
       '</div>';
   }).join('');
 
   const notesHtml = spec.review_notes
-    ? '<p style="margin-top:8px;font-size:0.82rem;color:#856404;background:#fff3cd;padding:8px;border-radius:4px">' + spec.review_notes.replace(/\n/g, '<br>') + '</p>'
+    ? '<p style="margin-top:8px;font-size:0.82rem;color:#856404;background:#fff3cd;padding:8px;border-radius:4px">' + esc(spec.review_notes).replace(/\n/g, '<br>') + '</p>'
     : '';
 
   const fileName = spec.source_file.split('/').pop();
 
   main.innerHTML =
     '<div class="card">' +
-    '<div class="card-header">' + spec.template_id +
-    '<span class="badge badge-' + spec.status + '" style="margin-left:8px">' + spec.status.replace('_', ' ') + '</span></div>' +
-    '<div class="card-body"><p style="font-size:0.8rem;color:#888">Source: ' + spec.source_file + '</p>' + notesHtml + '</div>' +
+    '<div class="card-header">' + esc(spec.template_id) +
+    '<span class="badge badge-' + esc(spec.status) + '" style="margin-left:8px">' + esc(spec.status).replace('_', ' ') + '</span></div>' +
+    '<div class="card-body"><p style="font-size:0.8rem;color:#888">Source: ' + esc(spec.source_file) + '</p>' + notesHtml + '</div>' +
     '<div class="action-row">' +
-    '<button class="btn-approve" onclick="approveTemplate(\'' + spec.template_id + '\')">\u2713 Approve Template</button>' +
-    '<button class="btn-flag" onclick="flagTemplate(\'' + spec.template_id + '\')">\u2691 Flag for Revision</button>' +
+    '<button class="btn-approve" onclick="approveTemplate(\'' + esc(spec.template_id) + '\')">\u2713 Approve Template</button>' +
+    '<button class="btn-flag" onclick="flagTemplate(\'' + esc(spec.template_id) + '\')">\u2691 Flag for Revision</button>' +
     '</div></div>' +
 
     '<div class="card"><div class="card-header">Original Email Preview</div>' +
@@ -180,18 +194,21 @@ function renderMain(spec) {
 }
 
 async function approveTemplate(id) {
-  await fetch('/api/templates/' + id + '/approve', { method: 'POST' });
+  const res = await fetch('/api/templates/' + id + '/approve', { method: 'POST' });
+  if (!res.ok) { alert('Failed to approve template.'); return; }
   await loadTemplates();
   await selectTemplate(id);
 }
 
 async function flagTemplate(id) {
   const note = prompt('Add a note for the reviewer (optional):');
-  await fetch('/api/templates/' + id + '/flag', {
+  if (note === null) return;
+  const res = await fetch('/api/templates/' + id + '/flag', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ note: note }),
+    body: JSON.stringify({ note: note || undefined }),
   });
+  if (!res.ok) { alert('Failed to flag template.'); return; }
   await loadTemplates();
   await selectTemplate(id);
 }

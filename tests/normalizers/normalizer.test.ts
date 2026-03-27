@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { HtmlExtractorAdapter } from '../../src/extractors/html-extractor';
 import { normalize } from '../../src/normalizers/normalizer';
 import { CanonicalTemplate } from '../../src/schemas/canonical-template';
+import { RawExtractedTemplate } from '../../src/normalizers/../extractors/types';
 
 const fixturePath = path.resolve(__dirname, '../../fixtures/sample-welcome.html');
 const fixtureHtml = fs.readFileSync(fixturePath, 'utf-8');
@@ -74,5 +75,63 @@ describe('normalize()', () => {
     const raw = extractor.extract(fixtureHtml, fixturePath, 'sample-welcome');
     const canonical = normalize(raw, 'sample-welcome');
     expect(canonical.status).toBe('needs_review');
+  });
+});
+
+describe('normalize() — unit cases', () => {
+  it('skips blocks with unrecognized types and warns', () => {
+    const raw: RawExtractedTemplate = {
+      sourceFile: 'test.html',
+      suggestedTemplateId: 'test',
+      contentBlocks: [
+        { type: 'unknown_type', text: 'foo', variables: [], order: 0 },
+        { type: 'headline', text: 'Hello', variables: [], order: 1 },
+      ],
+      uiModules: [],
+      variables: [],
+      conditions: [],
+    };
+    const canonical = normalize(raw, 'test');
+    expect(canonical.content_blocks).toHaveLength(1);
+    expect(canonical.content_blocks[0].type).toBe('headline');
+  });
+
+  it('strips invalid URL values (template variables as URLs) rather than failing', () => {
+    const raw: RawExtractedTemplate = {
+      sourceFile: 'test.html',
+      suggestedTemplateId: 'test',
+      contentBlocks: [
+        { type: 'cta', text: 'Click', url: '{{ctaUrl}}', variables: ['{{ctaUrl}}'], order: 0 },
+      ],
+      uiModules: [],
+      variables: ['{{ctaUrl}}'],
+      conditions: [],
+    };
+    const canonical = normalize(raw, 'test');
+    const cta = canonical.content_blocks[0];
+    // {{ctaUrl}} is not a valid URL — should be stripped to undefined
+    expect(cta.url).toBeUndefined();
+    // The token should still appear in the variable list
+    expect(canonical.variables.map(v => v.token)).toContain('{{ctaUrl}}');
+  });
+
+  it('correctly maps rawIndexToId for UI modules when blocks are skipped', () => {
+    const raw: RawExtractedTemplate = {
+      sourceFile: 'test.html',
+      suggestedTemplateId: 'test',
+      contentBlocks: [
+        { type: 'INVALID', text: 'skip me', variables: [], order: 0 },  // index 0, skipped
+        { type: 'headline', text: 'Hello', variables: [], order: 1 },    // index 1
+      ],
+      uiModules: [
+        { type: 'text_block', order: 0, contentBlockIndices: [1] },      // references raw index 1
+      ],
+      variables: [],
+      conditions: [],
+    };
+    const canonical = normalize(raw, 'test');
+    const textBlock = canonical.ui_modules[0];
+    expect(textBlock.content_block_ids).toHaveLength(1);
+    expect(textBlock.content_block_ids[0]).toBe('test:headline:0');
   });
 });

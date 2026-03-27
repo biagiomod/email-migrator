@@ -1,24 +1,10 @@
 // src/normalizers/normalizer.ts
-import { CanonicalTemplate, ContentBlock, UiModule, Variable } from '../schemas/canonical-template';
+import { z } from 'zod';
+import { CanonicalTemplate, ContentBlock, UiModule, Variable, ContentBlockType, UiModuleType } from '../schemas/canonical-template';
 import { RawExtractedTemplate } from '../extractors/types';
 
-const VALID_CONTENT_BLOCK_TYPES = new Set([
-  'subject_line', 'preheader', 'headline', 'body_text',
-  'cta', 'disclaimer', 'footer_content',
-]);
-
-const VALID_UI_MODULE_TYPES = new Set([
-  'header', 'hero', 'text_block', 'button', 'divider', 'footer',
-]);
-
-function isValidUrl(urlString: string): boolean {
-  try {
-    new URL(urlString);
-    return true;
-  } catch {
-    return false;
-  }
-}
+const VALID_CONTENT_BLOCK_TYPES = new Set(ContentBlockType.options);
+const VALID_UI_MODULE_TYPES = new Set(UiModuleType.options);
 
 function inferVariableType(token: string): Variable['type'] {
   const lower = token.toLowerCase();
@@ -32,6 +18,7 @@ function inferVariableType(token: string): Variable['type'] {
 export function normalize(raw: RawExtractedTemplate, templateId: string): CanonicalTemplate {
   const cbTypeCounters: Record<string, number> = {};
   const modTypeCounters: Record<string, number> = {};
+  const rawIndexToId: Record<number, string> = {};
 
   // Normalize content blocks — skip unknown types with a console warning
   const contentBlocks: ContentBlock[] = [];
@@ -42,34 +29,17 @@ export function normalize(raw: RawExtractedTemplate, templateId: string): Canoni
     }
     cbTypeCounters[rb.type] = cbTypeCounters[rb.type] ?? 0;
     const id = `${templateId}:${rb.type}:${cbTypeCounters[rb.type]++}`;
-
-    // Filter out invalid URLs (e.g., template variables like {{ctaUrl}})
-    let url = rb.url;
-    if (url && !isValidUrl(url)) {
-      url = undefined;
-    }
+    rawIndexToId[index] = id;  // record here, before push
 
     contentBlocks.push({
       id,
       type: rb.type as ContentBlock['type'],
       order: rb.order,
       text: rb.text,
-      url,
+      url: rb.url !== undefined ? (z.string().url().safeParse(rb.url).success ? rb.url : undefined) : undefined,
       variables: rb.variables,
       condition_ids: [],
     });
-  });
-
-  // Build index: raw content block array position → canonical ID
-  // (needed to resolve contentBlockIndices in ui modules)
-  const rawIndexToId: Record<number, string> = {};
-  raw.contentBlocks.forEach((rb, index) => {
-    if (VALID_CONTENT_BLOCK_TYPES.has(rb.type)) {
-      const canonicalBlock = contentBlocks.find(
-        b => b.type === rb.type && b.text === rb.text
-      );
-      if (canonicalBlock) rawIndexToId[index] = canonicalBlock.id;
-    }
   });
 
   // Normalize UI modules

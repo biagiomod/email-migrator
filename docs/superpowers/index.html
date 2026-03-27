@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Migrator — Phase 1 Docs</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #112240;
+    --blue: #2563eb;
+    --blue-light: #3b82f6;
+    --teal: #0ea5e9;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: #1e3a5f;
+    --code-bg: #0d1f38;
+    --card-bg: #112240;
+    --nav-width: 240px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  /* ── NAV ── */
+  nav {
+    width: var(--nav-width);
+    min-width: var(--nav-width);
+    background: var(--navy-mid);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 0 40px;
+    flex-shrink: 0;
+  }
+
+  .nav-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .nav-logo h1 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+
+  .nav-logo p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .nav-group { margin-bottom: 4px; }
+
+  .nav-group-label {
+    padding: 6px 20px 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  nav a {
+    display: block;
+    padding: 7px 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all .15s;
+  }
+
+  nav a:hover, nav a.active {
+    color: var(--text);
+    background: rgba(37,99,235,.12);
+    border-left-color: var(--blue-light);
+  }
+
+  /* ── MAIN ── */
+  main {
+    flex: 1;
+    max-width: 860px;
+    padding: 48px 52px 80px;
+    overflow-x: hidden;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    margin-bottom: 72px;
+    scroll-margin-top: 32px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+
+  section > h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #f0f6ff;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin: 28px 0 10px;
+  }
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 20px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  p { margin-bottom: 14px; color: #cbd5e1; }
+
+  ul, ol { padding-left: 22px; margin-bottom: 14px; color: #cbd5e1; }
+  li { margin-bottom: 5px; }
+
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ── ONE-PAGER HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #0f2a52 0%, #0a1f40 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 36px 40px;
+    margin-bottom: 32px;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #f0f6ff;
+    margin-bottom: 6px;
+  }
+
+  .hero .subtitle {
+    font-size: 14px;
+    color: var(--teal);
+    margin-bottom: 18px;
+    font-weight: 500;
+  }
+
+  .hero p { color: #94a3b8; margin-bottom: 18px; font-size: 15px; }
+
+  .hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .pill {
+    background: rgba(37,99,235,.18);
+    border: 1px solid rgba(59,130,246,.3);
+    color: var(--blue-light);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .pill.green { background: rgba(16,185,129,.15); border-color: rgba(16,185,129,.3); color: var(--green); }
+  .pill.teal  { background: rgba(14,165,233,.15); border-color: rgba(14,165,233,.3); color: var(--teal); }
+
+  /* ── PIPELINE FLOW ── */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 24px 0;
+  }
+
+  .pipeline-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px 20px;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    background: var(--card-bg);
+    position: relative;
+  }
+
+  .pipeline-step:first-child { border-radius: 8px 8px 0 0; }
+  .pipeline-step:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+
+  .pipeline-step::after {
+    content: '↓';
+    position: absolute;
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--border);
+    font-size: 16px;
+    z-index: 1;
+    background: var(--navy);
+    padding: 0 4px;
+  }
+
+  .pipeline-step:last-child::after { display: none; }
+
+  .step-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--teal);
+    background: rgba(14,165,233,.12);
+    border: 1px solid rgba(14,165,233,.25);
+    padding: 3px 9px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-top: 2px;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .step-body strong { color: var(--text); display: block; font-size: 14px; margin-bottom: 2px; }
+  .step-body span { font-size: 12px; color: var(--text-muted); }
+
+  /* ── SLIDES ── */
+  .slides-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0 32px;
+  }
+
+  .slide-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color .2s, transform .15s;
+  }
+
+  .slide-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-1px);
+  }
+
+  .slide-card.active { border-color: var(--blue); background: #0f2a52; }
+
+  .slide-num {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .slide-card h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    text-transform: none;
+    letter-spacing: 0;
+    margin: 0;
+  }
+
+  .slide-content-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--blue);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .slide-content-panel.visible { display: block; }
+
+  .slide-content-panel h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #f0f6ff;
+    margin: 0 0 16px;
+  }
+
+  /* ── STATUS BADGES ── */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: .04em;
+  }
+
+  .badge-ready    { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); }
+  .badge-review   { background: rgba(245,158,11,.12); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+  .badge-blocked  { background: rgba(239,68,68,.12);  color: var(--red);    border: 1px solid rgba(239,68,68,.3); }
+  .badge-exact    { background: rgba(16,185,129,.1);  color: var(--green);  border: 1px solid rgba(16,185,129,.25); }
+  .badge-partial  { background: rgba(245,158,11,.1);  color: var(--yellow); border: 1px solid rgba(245,158,11,.25); }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 9px 14px;
+    background: #0d1f38;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(30,58,95,.5);
+    color: #cbd5e1;
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(37,99,235,.05); }
+
+  /* ── CODE ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 14px 0;
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: #93c5fd;
+    background: rgba(37,99,235,.15);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  pre code {
+    color: #a8c4e8;
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  pre .kw  { color: #7dd3fc; }
+  pre .str { color: #86efac; }
+  pre .cmt { color: #475569; font-style: italic; }
+  pre .num { color: #fbbf24; }
+  pre .key { color: #c4b5fd; }
+
+  /* ── CARDS / CALLOUTS ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 14px 0;
+  }
+
+  .callout {
+    border-left: 3px solid var(--blue);
+    padding: 14px 18px;
+    background: rgba(37,99,235,.08);
+    border-radius: 0 8px 8px 0;
+    margin: 14px 0;
+    font-size: 14px;
+    color: #94a3b8;
+  }
+
+  .callout.warn { border-left-color: var(--yellow); background: rgba(245,158,11,.07); }
+  .callout.success { border-left-color: var(--green); background: rgba(16,185,129,.07); }
+
+  /* ── MATTERS GRID ── */
+  .matters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .matter-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+
+  .matter-card .icon { font-size: 22px; margin-bottom: 8px; }
+  .matter-card h4 { font-size: 13px; font-weight: 700; color: var(--text); text-transform: none; letter-spacing: 0; margin: 0 0 6px; }
+  .matter-card p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+  /* ── DEMO TIMELINE ── */
+  .timeline {
+    border-left: 2px solid var(--border);
+    padding-left: 24px;
+    margin: 20px 0;
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -30px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: 2px solid var(--navy);
+  }
+
+  .timeline-time {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--teal);
+    letter-spacing: .06em;
+    margin-bottom: 4px;
+  }
+
+  .timeline-item h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    text-transform: none;
+    letter-spacing: 0;
+    margin: 0 0 8px;
+  }
+
+  /* ── DIAGRAMS ── */
+  .diagram-wrap {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .diagram-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  /* ── ACCORDION (FAQ) ── */
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .faq-q {
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    padding: 16px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .faq-q:hover { color: var(--blue-light); }
+
+  .faq-icon {
+    font-size: 18px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform .2s;
+  }
+
+  .faq-item.open .faq-icon { transform: rotate(45deg); }
+
+  .faq-a {
+    display: none;
+    padding: 0 0 16px;
+    font-size: 13.5px;
+    color: #94a3b8;
+    line-height: 1.7;
+  }
+
+  .faq-item.open .faq-a { display: block; }
+
+  /* ── KNOWN ISSUES ── */
+  .ki-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+  }
+
+  .ki-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .ki-id {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--yellow);
+    background: rgba(245,158,11,.1);
+    border: 1px solid rgba(245,158,11,.25);
+    padding: 3px 9px;
+    border-radius: 4px;
+  }
+
+  .ki-card h3 { margin: 0; font-size: 15px; color: var(--text); }
+  .ki-card p  { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+  .ki-card p:last-child { margin: 0; }
+  .ki-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .ki-meta span { margin-right: 16px; }
+
+  /* ── WALKTHROUGH ── */
+  .walk-step {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+  }
+
+  .walk-step-num {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+
+  .walk-step h3 { margin: 0 0 14px; font-size: 16px; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { display: none; }
+    main { padding: 24px 20px 60px; }
+    .slides-grid, .matters-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ NAVIGATION ══ -->
+<nav id="nav">
+  <div class="nav-logo">
+    <h1>Email Migrator</h1>
+    <p>Phase 1 Documentation</p>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Stakeholder</div>
+    <a href="#overview">Overview</a>
+    <a href="#slides">Presentation</a>
+    <a href="#why">Why It Matters</a>
+    <a href="#walkthrough">Example Walkthrough</a>
+    <a href="#demo">Demo Guide</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Implementation</div>
+    <a href="#architecture">Architecture</a>
+    <a href="#userguide">User Guide</a>
+    <a href="#quickstart">Quickstart</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Reference</div>
+    <a href="#faq">FAQ</a>
+    <a href="#known-issues">Known Issues</a>
+  </div>
+</nav>
+
+<!-- ══ MAIN CONTENT ══ -->
+<main>
+
+  <!-- ══ OVERVIEW ══ -->
+  <section id="overview">
+    <div class="section-label">Stakeholder Brief</div>
+    <h2>Email Migrator — Phase 1</h2>
+
+    <div class="hero">
+      <h1>Systematic email template migration at scale.</h1>
+      <p class="subtitle">SourceSystem → Canonical Taxonomy → TargetSystem</p>
+      <p>We built a tool that migrates email templates from SourceSystem to TargetSystem systematically, safely, and at scale. Instead of manually rewriting each template, the tool reads each source template, classifies every content and layout element against a shared taxonomy, maps those elements to their TargetSystem equivalents, and produces a structured migration spec. No target output is generated until a human reviewer has approved the spec.</p>
+      <p>Phase 1 is complete: the full pipeline runs, produces reviewed-ready migration specs for any number of HTML templates, and includes a local browser-based review UI.</p>
+      <div class="hero-pills">
+        <span class="pill green">57 tests passing</span>
+        <span class="pill teal">Phase 1 complete</span>
+        <span class="pill">TypeScript</span>
+        <span class="pill">Deterministic</span>
+        <span class="pill">Human-gated export</span>
+      </div>
+    </div>
+
+    <h3>The core principle</h3>
+    <p>This is not a template converter. It is a <strong>translation layer</strong>.</p>
+
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="step-badge">Source</div>
+        <div class="step-body"><strong>SourceSystem HTML template</strong><span>The original email template file, unchanged</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-badge">Extract</div>
+        <div class="step-body"><strong>Canonical taxonomy</strong><span>Every element classified against a shared vocabulary, defined once</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-badge">Map</div>
+        <div class="step-body"><strong>TargetSystem mapping</strong><span>Rule-based, deterministic, every decision auditable with a confidence score</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-badge">Review</div>
+        <div class="step-body"><strong>Human review gate</strong><span>No output produced until a reviewer approves the migration spec</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-badge">Export</div>
+        <div class="step-body"><strong>TargetSystem output</strong><span>Generated from the approved spec — Phase 2</span></div>
+      </div>
+    </div>
+
+    <h3>Key properties</h3>
+    <div class="matters-grid">
+      <div class="matter-card">
+        <div class="icon">⚖️</div>
+        <h4>Deterministic</h4>
+        <p>Rule-based mapping. Every template goes through the same process. Same input always produces the same output.</p>
+      </div>
+      <div class="matter-card">
+        <div class="icon">🔍</div>
+        <h4>Auditable</h4>
+        <p>Every mapping decision is recorded with a confidence score and a reason. Full audit trail on disk.</p>
+      </div>
+      <div class="matter-card">
+        <div class="icon">🛡️</div>
+        <h4>Safe</h4>
+        <p>QA rules catch errors automatically. Blocked templates halt the pipeline. Export requires human sign-off.</p>
+      </div>
+      <div class="matter-card">
+        <div class="icon">⚡</div>
+        <h4>Fast</h4>
+        <p>A batch processes in seconds. Human review is focused only on genuinely ambiguous cases.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SLIDES ══ -->
+  <section id="slides">
+    <div class="section-label">Presentation</div>
+    <h2>Slide Deck (10 slides)</h2>
+    <p>Click any slide to expand the content. Recommended for turning into a deck or presenting directly.</p>
+
+    <div class="slides-grid" id="slide-grid">
+      <div class="slide-card" onclick="toggleSlide(1)">
+        <div class="slide-num">Slide 01</div>
+        <h4>Email Template Migration: Phase 1 Complete</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(2)">
+        <div class="slide-num">Slide 02</div>
+        <h4>The Problem</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(3)">
+        <div class="slide-num">Slide 03</div>
+        <h4>Our Approach: A Translation Layer</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(4)">
+        <div class="slide-num">Slide 04</div>
+        <h4>The Canonical Taxonomy</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(5)">
+        <div class="slide-num">Slide 05</div>
+        <h4>How the Pipeline Works</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(6)">
+        <div class="slide-num">Slide 06</div>
+        <h4>Human Review is Mandatory</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(7)">
+        <div class="slide-num">Slide 07</div>
+        <h4>What We Built in Phase 1</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(8)">
+        <div class="slide-num">Slide 08</div>
+        <h4>Live Demo</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(9)">
+        <div class="slide-num">Slide 09</div>
+        <h4>Why This Matters</h4>
+      </div>
+      <div class="slide-card" onclick="toggleSlide(10)">
+        <div class="slide-num">Slide 10</div>
+        <h4>Limitations &amp; Next Steps</h4>
+      </div>
+    </div>
+
+    <!-- Slide content panels -->
+    <div id="slide-1" class="slide-content-panel">
+      <h3>Email Template Migration — Phase 1 Complete</h3>
+      <ul>
+        <li>Migration tool for translating SourceBrand email templates to TargetBrand</li>
+        <li>Canonical taxonomy-first approach: no direct template-to-template copying</li>
+        <li>Phase 1 pipeline is complete and tested — 57 automated tests pass</li>
+        <li>Human approval required before any target output is produced</li>
+      </ul>
+    </div>
+
+    <div id="slide-2" class="slide-content-panel">
+      <h3>The Problem</h3>
+      <p><strong>We have hundreds of email templates. Manual migration is risky.</strong></p>
+      <ul>
+        <li>Templates contain personalisation variables, compliance disclaimers, legal language</li>
+        <li>Manual copy-paste misses variables, breaks links, and loses context</li>
+        <li>Different people migrating different templates produce inconsistent results</li>
+        <li>No audit trail: how do you know what was changed and why?</li>
+        <li>Scale: hundreds of templates × multiple reviewers = months of error-prone work</li>
+      </ul>
+      <div class="callout warn">The cost of getting this wrong is high. A broken transactional email or missing disclaimer is a customer experience failure, or worse.</div>
+    </div>
+
+    <div id="slide-3" class="slide-content-panel">
+      <h3>Our Approach: A Translation Layer</h3>
+      <p><strong>We don't copy templates. We translate them through a shared language.</strong></p>
+      <pre>SourceSystem template
+        ↓
+  Canonical Taxonomy   ← shared vocabulary, defined once
+        ↓
+TargetSystem mapping
+        ↓
+  Human review gate
+        ↓
+TargetSystem output</pre>
+      <ul>
+        <li>Every element in every source template is classified against the canonical taxonomy</li>
+        <li>The taxonomy is the contract between the two systems</li>
+        <li>Mappings are rule-based, deterministic, and auditable</li>
+        <li>No output is produced without human sign-off</li>
+      </ul>
+      <div class="callout success">This is safer than a migration script and faster than manual rewriting.</div>
+    </div>
+
+    <div id="slide-4" class="slide-content-panel">
+      <h3>The Canonical Taxonomy</h3>
+      <p><strong>A shared vocabulary for everything in an email template.</strong></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Layer</th><th>What it classifies</th><th>Examples</th></tr></thead>
+          <tbody>
+            <tr><td>Content blocks</td><td>What the text <em>is</em></td><td>headline, preheader, body text, CTA, disclaimer, footer</td></tr>
+            <tr><td>UI modules</td><td>How it's <em>laid out</em></td><td>header, hero, text block, button, divider, footer</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Every block and module gets:</p>
+      <ul>
+        <li>A <strong>stable ID</strong>: <code>payment-reminder:headline:0</code></li>
+        <li>A <strong>type</strong>: one of the canonical vocabulary values</li>
+        <li><strong>Variables extracted</strong>: <code>{{firstName}}</code>, <code>{{amount}}</code>, <code>{{dueDate}}</code></li>
+        <li>A <strong>mapping result</strong>: which TargetSystem component it maps to, with a confidence score</li>
+      </ul>
+    </div>
+
+    <div id="slide-5" class="slide-content-panel">
+      <h3>How the Pipeline Works</h3>
+      <pre>INGEST     → Read HTML files, derive stable template IDs
+EXTRACT    → Parse each template: content blocks, UI modules, variables
+NORMALIZE  → Assign stable canonical IDs, validate structure
+MAP        → Match each component to a TargetSystem equivalent
+ASSESS     → Run QA rules, score confidence, write spec to disk ✎
+REVIEW     → Human approves or flags in local browser UI
+EXPORT     → Generate TargetSystem output (Phase 2)</pre>
+      <ul>
+        <li>Stages 1–5 run automatically from a single CLI command</li>
+        <li>Nothing is written to disk until ASSESS</li>
+        <li>REVIEW requires human action before EXPORT can proceed</li>
+        <li>EXPORT is hard-gated: it only runs after full approval</li>
+      </ul>
+    </div>
+
+    <div id="slide-6" class="slide-content-panel">
+      <h3>Human Review is Mandatory</h3>
+      <p>The system will not generate target output without a human approving the migration spec.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Status</th><th>Meaning</th><th>What happens</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-ready">ready</span></td>
+              <td>All components at 100% confidence, no QA issues</td>
+              <td>Available for batch approval</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-review">needs_review</span></td>
+              <td>One or more partial matches or QA warnings</td>
+              <td>Must be reviewed individually</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-blocked">blocked</span></td>
+              <td>QA errors (empty template, missing compliance)</td>
+              <td>Pipeline exits non-zero. Cannot proceed.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="slide-7" class="slide-content-panel">
+      <h3>What We Built in Phase 1</h3>
+      <p><strong>A complete, tested, runnable pipeline.</strong></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td>HTML extractor</td><td>Parses SourceSystem templates into structured content and layout blocks</td></tr>
+            <tr><td>Normalizer</td><td>Assigns stable canonical IDs and validates the structure</td></tr>
+            <tr><td>Rule-based mapper</td><td>Maps every component to its TargetSystem equivalent</td></tr>
+            <tr><td>QA engine</td><td>Checks variable consistency, compliance markers, structural integrity</td></tr>
+            <tr><td>ASSESS stage</td><td>Runs mapper + QA, computes status, writes migration spec JSON</td></tr>
+            <tr><td>Review server</td><td>Local Express app serving the review UI</td></tr>
+            <tr><td>Review UI</td><td>Vanilla JS single-page app: approve, flag, batch-approve</td></tr>
+            <tr><td>CLI</td><td><code>migrator run</code>, <code>migrator review</code>, <code>migrator export</code> (Phase 2)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout success">57 automated tests. Zero manual configuration required to run.</div>
+    </div>
+
+    <div id="slide-8" class="slide-content-panel">
+      <h3>Live Demo</h3>
+      <p><strong>What we'll show:</strong></p>
+      <ol>
+        <li>A source HTML email template (payment reminder)</li>
+        <li>Run <code>migrator run --source ./demo/fixtures --specs ./demo/specs</code></li>
+        <li>Open the review UI: <code>migrator review --specs ./demo/specs --source ./demo/fixtures</code></li>
+        <li>Walk through one migration spec: content blocks, variables, mapping results</li>
+        <li>Approve and flag</li>
+        <li>Describe the <code>blocked</code> path conceptually</li>
+      </ol>
+      <p><strong>Key things to notice:</strong></p>
+      <ul>
+        <li>Variables like <code>{{firstName}}</code>, <code>{{amount}}</code> are automatically extracted</li>
+        <li>Every mapping has a reason and a confidence score</li>
+        <li>The reviewer sees the source template side-by-side</li>
+        <li>Nothing proceeds without the reviewer's action</li>
+      </ul>
+    </div>
+
+    <div id="slide-9" class="slide-content-panel">
+      <h3>Why This Matters</h3>
+      <div class="matters-grid" style="margin:0">
+        <div class="matter-card">
+          <h4>Consistency</h4>
+          <p>Every template goes through the same process. No drift between team members.</p>
+        </div>
+        <div class="matter-card">
+          <h4>Traceability</h4>
+          <p>Every decision recorded in spec JSON — what, why, confidence, who reviewed, when.</p>
+        </div>
+        <div class="matter-card">
+          <h4>Speed</h4>
+          <p>Batch processes in seconds. Review effort goes to genuinely ambiguous cases only.</p>
+        </div>
+        <div class="matter-card">
+          <h4>Safety</h4>
+          <p>Compliance errors halt the pipeline. Nothing reaches TargetSystem without sign-off.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="slide-10" class="slide-content-panel">
+      <h3>Limitations &amp; Next Steps</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Limitation</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Export to TargetSystem</td><td>Needs TargetSystem template structure confirmed</td></tr>
+            <tr><td>AI-assisted classification</td><td>Stub only; GitHub Copilot is the Phase 2 candidate</td></tr>
+            <tr><td>Style / token migration</td><td>Design tokens, colours, typography not yet extracted</td></tr>
+            <tr><td>Multi-column layout</td><td>Complex layout patterns deferred to Phase 2</td></tr>
+            <tr><td>Image asset handling</td><td>Images detected but not transferred</td></tr>
+            <tr><td>Hosted review UI</td><td>Currently local only; no multi-user or async review</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Phase 2 triggers:</strong> TargetSystem structure confirmed · Real template batch ready · Taxonomy sign-off</p>
+    </div>
+  </section>
+
+  <!-- ══ WHY IT MATTERS ══ -->
+  <section id="why">
+    <div class="section-label">Stakeholder</div>
+    <h2>Why This Matters</h2>
+
+    <div class="matter-card" style="margin-bottom:14px">
+      <h4>Scale without sacrifice</h4>
+      <p>The tool can process hundreds of templates in seconds. Every template gets the same rigorous classification regardless of who runs it or when.</p>
+    </div>
+    <div class="matter-card" style="margin-bottom:14px">
+      <h4>Variables never get lost</h4>
+      <p>All personalisation tokens (<code>{{firstName}}</code>, <code>{{amount}}</code>, etc.) are extracted automatically and validated bidirectionally — every variable in a content block is also declared at the template level, and every declared variable must appear somewhere in the content.</p>
+    </div>
+    <div class="matter-card" style="margin-bottom:14px">
+      <h4>Compliance is tracked, not assumed</h4>
+      <p>The QA engine checks for required compliance markers. A template that's missing a required disclaimer will be flagged <span class="badge badge-blocked">blocked</span> before it gets anywhere near a reviewer.</p>
+    </div>
+    <div class="matter-card" style="margin-bottom:14px">
+      <h4>Every decision is auditable</h4>
+      <p>The migration spec JSON is the permanent record. It captures what was mapped, what confidence score it got, why, who reviewed it, and when. This is not possible with manual migration.</p>
+    </div>
+    <div class="matter-card">
+      <h4>Phase 2 is uncoupled from Phase 1</h4>
+      <p>When the TargetSystem export adapter is built, it works from the already-reviewed specs. There is no need to re-review templates or re-run the pipeline just because the export format changed.</p>
+    </div>
+  </section>
+
+  <!-- ══ WALKTHROUGH ══ -->
+  <section id="walkthrough">
+    <div class="section-label">Example</div>
+    <h2>Example Translation Walkthrough</h2>
+    <p>A payment reminder email migrating from SourceBrand to TargetSystem, step by step.</p>
+
+    <div class="walk-step">
+      <div class="walk-step-num">Source template</div>
+      <h3>payment-reminder.html</h3>
+      <pre>&lt;div class="preheader"&gt;Your payment of {{amount}} is due on {{dueDate}}&lt;/div&gt;
+&lt;h1&gt;Payment reminder, {{firstName}}&lt;/h1&gt;
+&lt;p&gt;Your payment of {{amount}} is due on {{dueDate}}. Log in to pay.&lt;/p&gt;
+&lt;a href="{{payUrl}}" class="button"&gt;Make a payment&lt;/a&gt;
+&lt;p class="disclaimer"&gt;Subject to terms and conditions.&lt;/p&gt;
+&lt;p&gt;© 2026 SourceBrand.
+  &lt;a href="{{unsubscribeUrl}}"&gt;Unsubscribe&lt;/a&gt; | &lt;a href="{{privacyUrl}}"&gt;Privacy&lt;/a&gt;
+&lt;/p&gt;</pre>
+    </div>
+
+    <div class="walk-step">
+      <div class="walk-step-num">Step 1 — EXTRACT + NORMALIZE</div>
+      <h3>Canonical content blocks</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Stable ID</th><th>Type</th><th>Text (excerpt)</th><th>Variables</th></tr></thead>
+          <tbody>
+            <tr><td><code>payment-reminder:preheader:0</code></td><td>preheader</td><td>Your payment of {{amount}}…</td><td><code>{{amount}}</code> <code>{{dueDate}}</code></td></tr>
+            <tr><td><code>payment-reminder:headline:0</code></td><td>headline</td><td>Payment reminder, {{firstName}}</td><td><code>{{firstName}}</code></td></tr>
+            <tr><td><code>payment-reminder:body_text:0</code></td><td>body_text</td><td>Your payment of {{amount}}…</td><td><code>{{amount}}</code> <code>{{dueDate}}</code></td></tr>
+            <tr><td><code>payment-reminder:cta:0</code></td><td>cta</td><td>Make a payment</td><td><code>{{payUrl}}</code></td></tr>
+            <tr><td><code>payment-reminder:disclaimer:0</code></td><td>disclaimer</td><td>Subject to terms…</td><td>—</td></tr>
+            <tr><td><code>payment-reminder:footer_content:0</code></td><td>footer_content</td><td>© 2026 SourceBrand.</td><td><code>{{unsubscribeUrl}}</code> <code>{{privacyUrl}}</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted)">Template-level variables (deduplicated): <code>{{amount}}</code> <code>{{dueDate}}</code> <code>{{firstName}}</code> <code>{{payUrl}}</code> <code>{{unsubscribeUrl}}</code> <code>{{privacyUrl}}</code></p>
+    </div>
+
+    <div class="walk-step">
+      <div class="walk-step-num">Step 2 — MAP</div>
+      <h3>TargetSystem component mapping</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>Match</th><th>Confidence</th><th>Target module</th></tr></thead>
+          <tbody>
+            <tr><td><code>…:preheader:0</code></td><td><span class="badge badge-exact">exact</span></td><td>1.0</td><td>TargetSystem/Preheader</td></tr>
+            <tr><td><code>…:headline:0</code></td><td><span class="badge badge-exact">exact</span></td><td>1.0</td><td>TargetSystem/Headline</td></tr>
+            <tr><td><code>…:body_text:0</code></td><td><span class="badge badge-exact">exact</span></td><td>1.0</td><td>TargetSystem/BodyText</td></tr>
+            <tr><td><code>…:cta:0</code></td><td><span class="badge badge-partial">partial</span></td><td>0.8</td><td>TargetSystem/CTA — button variant needs confirmation</td></tr>
+            <tr><td><code>…:disclaimer:0</code></td><td><span class="badge badge-exact">exact</span></td><td>1.0</td><td>TargetSystem/Disclaimer</td></tr>
+            <tr><td><code>…:footer_content:0</code></td><td><span class="badge badge-exact">exact</span></td><td>1.0</td><td>TargetSystem/FooterContent</td></tr>
+            <tr><td><code>…:button:0</code> <em style="font-size:11px;color:var(--text-muted)">(UI)</em></td><td><span class="badge badge-partial">partial</span></td><td>0.7</td><td>TargetSystem/CTAButton — variant unconfirmed</td></tr>
+            <tr><td><code>…:footer:0</code> <em style="font-size:11px;color:var(--text-muted)">(UI)</em></td><td><span class="badge badge-exact">exact</span></td><td>1.0</td><td>TargetSystem/Footer</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="walk-step">
+      <div class="walk-step-num">Step 3 — ASSESS</div>
+      <h3>Status computed</h3>
+      <ul>
+        <li>No QA errors</li>
+        <li>Two partial matches (CTA content block, button UI module)</li>
+        <li>Status: <span class="badge badge-review">needs_review</span></li>
+        <li><code>assessed_at</code>: ISO timestamp written to spec JSON</li>
+      </ul>
+    </div>
+
+    <div class="walk-step">
+      <div class="walk-step-num">Step 4 — REVIEW</div>
+      <h3>Human approves</h3>
+      <p>Reviewer opens the UI, sees the partial matches flagged with reasons, confirms the button mapping is correct for this template, and clicks <strong>Approve</strong>. <code>review_status</code> on all mapping results: <code>approved</code>.</p>
+    </div>
+
+    <div class="walk-step">
+      <div class="walk-step-num">Step 5 — EXPORT (Phase 2)</div>
+      <h3>TargetSystem output generated</h3>
+      <p>The export adapter reads the approved spec and generates the TargetSystem template artifact. All content, variables, and module assignments are already resolved — no human decision-making at export time.</p>
+    </div>
+  </section>
+
+  <!-- ══ DEMO GUIDE ══ -->
+  <section id="demo">
+    <div class="section-label">Demo</div>
+    <h2>Demo Guide</h2>
+
+    <h3>Setup</h3>
+    <ul>
+      <li>Terminal open at project root</li>
+      <li>Browser open (Chrome or Firefox)</li>
+      <li>Source template already in <code>demo/fixtures/payment-reminder.html</code></li>
+      <li>Clean specs: <code>rm -rf demo/specs</code></li>
+    </ul>
+
+    <h3>2-Minute Demo</h3>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-time">0:00 – 0:45</div>
+        <h4>Run the pipeline</h4>
+        <pre>npx tsx src/cli/index.ts run \
+  --source ./demo/fixtures \
+  --specs ./demo/specs</pre>
+        <p style="font-size:13px;color:var(--text-muted)">"INGEST finds the file. EXTRACT parses it. NORMALIZE assigns stable IDs. MAP matches each component to TargetSystem. ASSESS runs QA and writes the spec to disk. All in under a second."</p>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">0:45 – 2:00</div>
+        <h4>Open the review UI</h4>
+        <pre>npx tsx src/cli/index.ts review \
+  --specs ./demo/specs \
+  --source ./demo/fixtures</pre>
+        <p style="font-size:13px;color:var(--text-muted)">Open <code>http://localhost:3333</code>. Click <strong>payment-reminder</strong>. Show content blocks, variables, the partial-match CTA row. Click <strong>Approve</strong>. "That's the gate before export."</p>
+      </div>
+    </div>
+
+    <h3>5-Minute Demo</h3>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-time">0:00 – 0:30 · Show the source</div>
+        <h4>Open the source template</h4>
+        <p style="font-size:13px;color:var(--text-muted)">Open <code>demo/fixtures/payment-reminder.html</code>. "Preheader, headline, body text with variables like <code>{{firstName}}</code> and <code>{{amount}}</code>, a CTA, disclaimer, footer. The goal: migrate all of this to TargetSystem without losing anything."</p>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">0:30 – 1:30 · Run the pipeline</div>
+        <h4>Run and walk through the output</h4>
+        <p style="font-size:13px;color:var(--text-muted)">Walk through each log line. Show the summary: <code>Needs review: 1, Blocked: 0</code>. "No errors. Needs review because the CTA button confidence is 0.7."</p>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">1:30 – 3:00 · Review UI</div>
+        <h4>Show the spec detail</h4>
+        <p style="font-size:13px;color:var(--text-muted)">Point out: content blocks, all 6 variables extracted, mapping results table. Show the <span class="badge badge-partial">partial</span> rows. "The system flags ambiguity explicitly. It doesn't silently choose a mapping it's not sure about."</p>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">3:00 – 3:30 · Approve</div>
+        <h4>Click Approve</h4>
+        <p style="font-size:13px;color:var(--text-muted)">"Reviewer confirms. Review status updates. This gates export." Show updated status in sidebar.</p>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">3:30 – 4:00 · Blocked path</div>
+        <h4>Describe blocked (no need to demo live)</h4>
+        <p style="font-size:13px;color:var(--text-muted)">"If a required compliance disclaimer is missing, the pipeline exits with a non-zero code. Blocked templates cannot be approved. Fix the source, re-run, review again. That's a hard gate, not a suggestion."</p>
+      </div>
+    </div>
+
+    <h3>Three things that land well with stakeholders</h3>
+    <div class="card">
+      <p>1. <strong>Variable extraction</strong> — show <code>{{firstName}}</code>, <code>{{amount}}</code>, <code>{{dueDate}}</code> appearing automatically. No manual tagging required.</p>
+      <p>2. <strong>The partial match row</strong> — confidence 0.8, reason: "button variant requires manual confirmation." The system knows what it doesn't know.</p>
+      <p style="margin:0">3. <strong>The blocked path</strong> (describe it) — "If a required disclaimer is missing, the pipeline halts. No template with a compliance error can pass through."</p>
+    </div>
+
+    <h3>Common demo issues</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Issue</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Port in use</td><td>Add <code>--port 3333</code> (or any open port)</td></tr>
+          <tr><td>Stale specs</td><td><code>rm -rf demo/specs</code> then re-run</td></tr>
+          <tr><td>"Failed to load templates"</td><td>Pipeline must run first; check <code>demo/specs/</code> has <code>.json</code> files</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ ARCHITECTURE ══ -->
+  <section id="architecture">
+    <div class="section-label">Implementation</div>
+    <h2>Architecture Overview</h2>
+
+    <h3>Diagram 1 — The translation approach</h3>
+    <div class="diagram-wrap">
+      <div class="diagram-label">How source templates become TargetSystem output</div>
+      <div class="mermaid">
+flowchart LR
+    A["SourceSystem\nTemplate (.html)"]
+    B["Canonical\nTaxonomy"]
+    C["TargetSystem\nMapping"]
+    D["Migration\nSpec (JSON)"]
+    E["Human\nReview Gate"]
+    F["TargetSystem\nOutput"]
+
+    A -->|"EXTRACT\nNORMALIZE"| B
+    B -->|"MAP\nASSESS"| C
+    C --> D
+    D --> E
+    E -->|"approved"| F
+    E -->|"flagged"| D
+      </div>
+    </div>
+
+    <h3>Diagram 2 — Pipeline stages</h3>
+    <div class="diagram-wrap">
+      <div class="diagram-label">Full pipeline with blocked exit path</div>
+      <div class="mermaid">
+flowchart TD
+    I["INGEST\nDiscover .html files\nDerive stable template IDs"]
+    E["EXTRACT\nParse HTML\nContent blocks · UI modules · Variables"]
+    N["NORMALIZE\nAssign canonical IDs\nValidate types"]
+    M["MAP\nRule-based matching\nConfidence scoring"]
+    A["ASSESS ✎\nRun QA rules\nCompute status\nWrite spec to disk"]
+    R["REVIEW\nHuman approves / flags\nin local browser UI"]
+    X["EXPORT\nGenerate TargetSystem output\nPhase 2"]
+    STOP["Pipeline exits\nnon-zero"]
+
+    I --> E --> N --> M --> A --> R --> X
+    A -->|blocked| STOP
+      </div>
+    </div>
+
+    <h3>Diagram 3 — Template status after ASSESS</h3>
+    <div class="diagram-wrap">
+      <div class="diagram-label">How status is computed</div>
+      <div class="mermaid">
+flowchart LR
+    A["Template\nprocessed"]
+    B{{"QA\nerrors?"}}
+    C{{"Partial match\nor warning?"}}
+    D["blocked\nPipeline halts"]
+    E["needs_review\nReview individually"]
+    F["ready\nBatch approve eligible"]
+
+    A --> B
+    B -->|yes| D
+    B -->|no| C
+    C -->|yes| E
+    C -->|no| F
+      </div>
+    </div>
+
+    <h3>Pipeline stages</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Stage</th><th>File</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><strong>INGEST</strong></td><td><code>src/pipeline/ingest.ts</code></td><td>Discovers .html files, derives stable template IDs, detects collisions</td></tr>
+          <tr><td><strong>EXTRACT</strong></td><td><code>src/extractors/html-extractor.ts</code></td><td>Parses HTML with Cheerio; produces raw content blocks, UI modules, variables</td></tr>
+          <tr><td><strong>NORMALIZE</strong></td><td><code>src/normalizers/normalizer.ts</code></td><td>Assigns stable canonical IDs (<code>templateId:type:index</code>), validates types</td></tr>
+          <tr><td><strong>MAP</strong></td><td><code>src/mappers/generic-rule-mapper.ts</code></td><td>Applies rule tables; returns match type, confidence, reason per component</td></tr>
+          <tr><td><strong>ASSESS ✎</strong></td><td><code>src/assess/assess.ts</code></td><td>Runs mapper + QA rules, computes status, <strong>writes spec JSON to disk</strong></td></tr>
+          <tr><td><strong>REVIEW</strong></td><td><code>src/review/server.ts</code></td><td>Express server + vanilla JS UI; approve, flag, batch-approve</td></tr>
+          <tr><td><strong>EXPORT</strong></td><td><code>src/export/types.ts</code></td><td>Stub — Phase 2. ExportAdapter interface defined, not implemented.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>QA rules</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Code</th><th>Severity</th><th>Trigger</th></tr></thead>
+        <tbody>
+          <tr><td><code>EMPTY_TEMPLATE</code></td><td><span class="badge badge-blocked">error</span></td><td>No content blocks extracted</td></tr>
+          <tr><td><code>MISSING_REQUIRED_COMPLIANCE</code></td><td><span class="badge badge-blocked">error</span></td><td>A required compliance marker is absent</td></tr>
+          <tr><td><code>VARIABLE_INCONSISTENCY</code></td><td><span class="badge badge-review">warning</span></td><td>Token in a content block not in template-level variable list</td></tr>
+          <tr><td><code>UNUSED_TEMPLATE_VARIABLE</code></td><td><span class="badge badge-review">warning</span></td><td>Template-level variable not referenced in any block</td></tr>
+          <tr><td><code>DANGLING_CONTENT_BLOCK_REF</code></td><td><span class="badge badge-review">warning</span></td><td>UI module references a content block ID that doesn't exist</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Key files</h3>
+    <pre>src/
+  cli/index.ts                  — Commander CLI (run / review / export)
+  pipeline/
+    ingest.ts                   — File discovery, template ID derivation
+    runner.ts                   — Pipeline orchestration
+  extractors/
+    html-extractor.ts           — Cheerio-based HTML extractor
+  normalizers/
+    normalizer.ts               — Canonical ID assignment and validation
+  mappers/
+    generic-rule-mapper.ts      — Rule-based mapper (Phase 1)
+  qa/
+    rules.ts                    — QA rule engine
+  assess/
+    assess.ts                   — ASSESS stage (the only disk writer)
+  review/
+    server.ts                   — Express review server
+    ui/app.html                 — Vanilla JS review UI
+  schemas/
+    canonical-template.ts       — Zod schema for CanonicalTemplate
+
+demo/fixtures/                  — Demo templates
+tests/e2e/                      — End-to-end pipeline test</pre>
+  </section>
+
+  <!-- ══ USER GUIDE ══ -->
+  <section id="userguide">
+    <div class="section-label">Implementation</div>
+    <h2>User Guide</h2>
+
+    <h3>What inputs it expects</h3>
+    <p>A directory of <code>.html</code> or <code>.htm</code> email template files. File names become template IDs (<code>payment-reminder.html</code> → <code>payment-reminder</code>). Names must be unique after normalisation.</p>
+    <pre># Valid
+payment-reminder.html
+welcome-email.html
+account-statement.html
+
+# Will error — same slug
+Payment Reminder.html   ← clashes with payment-reminder.html</pre>
+
+    <h3>What outputs it generates</h3>
+    <p>One JSON migration spec per template, written to <code>--specs</code>. Each spec contains: <code>template_id</code>, <code>content_blocks</code>, <code>ui_modules</code>, <code>variables</code>, <code>mapping_results</code>, <code>status</code>, <code>review_notes</code>, <code>assessed_at</code>.</p>
+
+    <h3>How to run the pipeline</h3>
+    <pre>npx tsx src/cli/index.ts run \
+  --source ./templates \
+  --specs ./specs</pre>
+    <p>On completion you'll see a summary:</p>
+    <pre>--- Pipeline complete ---
+Total:        3
+Ready:        2
+Needs review: 1
+Blocked:      0
+
+✓ Specs written to ./specs</pre>
+    <p>If blocked templates exist, the process exits non-zero:</p>
+    <pre>✗ 1 template(s) are BLOCKED. Review spec files in ./specs for error details.</pre>
+
+    <h3>How to launch review</h3>
+    <pre>npx tsx src/cli/index.ts review \
+  --specs ./specs \
+  --source ./templates \
+  --port 3333</pre>
+
+    <h3>How approvals work</h3>
+    <ol>
+      <li>Sidebar lists all templates with status badges</li>
+      <li>Click a template to open the full spec detail</li>
+      <li>Review content blocks, variables, mapping results, QA notes</li>
+      <li>Click <strong>Approve</strong> or <strong>Flag</strong> (prompts for a note)</li>
+      <li><strong>Batch approve</strong> approves all <span class="badge badge-ready">ready</span> templates at once</li>
+    </ol>
+    <div class="callout warn">Blocked templates cannot be approved. Fix the source, re-run, and review again.</div>
+
+    <h3>Common workflow</h3>
+    <pre>1. Copy .html templates into a directory
+2. npx tsx src/cli/index.ts run --source ./templates --specs ./specs
+3. If blocked → fix source, re-run
+4. npx tsx src/cli/index.ts review --specs ./specs --source ./templates
+5. Batch-approve "ready" · Review "needs_review" individually
+6. Export (Phase 2)</pre>
+
+    <h3>Common failure cases</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Error</th><th>Cause &amp; fix</th></tr></thead>
+        <tbody>
+          <tr><td>"Source directory not found"</td><td>The <code>--source</code> path doesn't exist. Check for typos.</td></tr>
+          <tr><td>"templateId collision"</td><td>Two files produce the same slug. Rename one.</td></tr>
+          <tr><td>BLOCKED: EMPTY_TEMPLATE</td><td>Extractor found no content blocks. HTML may be minified or unusually structured.</td></tr>
+          <tr><td>BLOCKED: MISSING_REQUIRED_COMPLIANCE</td><td>Required compliance marker absent. Check <code>review_notes</code> for the family name.</td></tr>
+          <tr><td>"Pipeline failed: …"</td><td>Unexpected error — message includes the file name. Check encoding or file name characters.</td></tr>
+          <tr><td>Port already in use</td><td>Use <code>--port 3334</code> or any open port.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ QUICKSTART ══ -->
+  <section id="quickstart">
+    <div class="section-label">Implementation</div>
+    <h2>Quickstart</h2>
+    <p>Get the pipeline running locally in under 5 minutes.</p>
+
+    <h3>Prerequisites</h3>
+    <ul><li>Node.js 18+</li><li>npm</li></ul>
+
+    <h3>Install</h3>
+    <pre>npm install</pre>
+
+    <h3>Run with the demo fixture</h3>
+    <pre>npx tsx src/cli/index.ts run \
+  --source ./demo/fixtures \
+  --specs ./demo/specs
+
+npx tsx src/cli/index.ts review \
+  --specs ./demo/specs \
+  --source ./demo/fixtures \
+  --port 3333</pre>
+    <p>Open <code>http://localhost:3333</code>.</p>
+
+    <h3>Run with your own templates</h3>
+    <pre>npx tsx src/cli/index.ts run \
+  --source ./my-templates \
+  --specs ./my-specs
+
+npx tsx src/cli/index.ts review \
+  --specs ./my-specs \
+  --source ./my-templates</pre>
+
+    <h3>Run the tests</h3>
+    <pre>npx vitest run</pre>
+
+    <h3>CLI reference</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Command</th><th>Required</th><th>Optional</th></tr></thead>
+        <tbody>
+          <tr><td><code>migrator run</code></td><td><code>--source &lt;dir&gt;</code></td><td><code>--specs &lt;dir&gt;</code> (default: <code>./specs</code>)</td></tr>
+          <tr><td><code>migrator review</code></td><td><code>--specs &lt;dir&gt;</code> <code>--source &lt;dir&gt;</code></td><td><code>--port &lt;number&gt;</code> (default: 3000)</td></tr>
+          <tr><td><code>migrator export</code></td><td><code>--specs &lt;dir&gt;</code> <code>--output &lt;dir&gt;</code></td><td>— Phase 2, not yet implemented</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ FAQ ══ -->
+  <section id="faq">
+    <div class="section-label">Reference</div>
+    <h2>FAQ</h2>
+    <div id="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">What does this tool actually do?<span class="faq-icon">+</span></button>
+        <div class="faq-a">It reads HTML email templates from SourceSystem, classifies every content and layout element against a shared vocabulary (the canonical taxonomy), maps those elements to their TargetSystem equivalents, and produces structured migration spec files. A human reviewer must approve each spec before export. It does not generate TargetSystem output in Phase 1.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Do I need to know TypeScript or Node.js to use it?<span class="faq-icon">+</span></button>
+        <div class="faq-a">No. You need Node.js installed to run the commands, but you don't need to write or read any code. The review UI is a browser-based tool any non-technical reviewer can use.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">What personalisation variable formats does it recognise?<span class="faq-icon">+</span></button>
+        <div class="faq-a">Three formats: <code>{{variable_name}}</code> (Handlebars/Mustache), <code>[[variable_name]]</code> (bracket style), and <code>[VARIABLE_NAME]</code> (uppercase, 2+ characters). Variables are also extracted from <code>href</code> attributes — for unsubscribe and privacy policy links.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">What does "needs review" mean? Can I just approve everything?<span class="faq-icon">+</span></button>
+        <div class="faq-a">It means at least one component was mapped at confidence below 1.0, or the QA engine produced a warning. You can approve it — the system doesn't block you — but you should look at the partial matches first. <span class="badge badge-ready">ready</span> templates (all at 1.0, no warnings) can be batch-approved safely.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">What does "blocked" mean?<span class="faq-icon">+</span></button>
+        <div class="faq-a">A QA error: either no content blocks were extracted (<code>EMPTY_TEMPLATE</code>), or a required compliance marker is missing. The pipeline exits non-zero. Blocked templates cannot be approved. Fix the source, re-run, and review again.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Can I re-run the pipeline on the same templates?<span class="faq-icon">+</span></button>
+        <div class="faq-a">Yes. <code>migrator run</code> overwrites the spec files in <code>--specs</code>. Any previous approvals are lost. Re-running is expected when you update source templates or fix blocked ones.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">How do I know if a variable was missed?<span class="faq-icon">+</span></button>
+        <div class="faq-a">The QA engine checks bidirectionally: <code>VARIABLE_INCONSISTENCY</code> fires when a token in a block is not in the template-level list; <code>UNUSED_TEMPLATE_VARIABLE</code> fires when a template-level token doesn't appear in any block. Both show up as warnings in <code>review_notes</code>.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Can two templates have the same name?<span class="faq-icon">+</span></button>
+        <div class="faq-a">No. Template IDs are derived from file names (lowercase, non-alphanumeric → <code>-</code>). If two files produce the same ID, the pipeline throws before processing anything. Rename one.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">Can multiple people review at the same time?<span class="faq-icon">+</span></button>
+        <div class="faq-a">The review server is local-only and single-user in Phase 1. Running it on multiple machines against the same <code>--specs</code> directory simultaneously is not recommended — concurrent writes can corrupt spec files.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">What's coming in Phase 2?<span class="faq-icon">+</span></button>
+        <div class="faq-a">Export adapter (TargetSystem output from approved specs), AI-assisted classification (GitHub Copilot candidate), design token extraction, multi-column layout support, image asset handling, and a hosted review UI for team workflows.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══ KNOWN ISSUES ══ -->
+  <section id="known-issues">
+    <div class="section-label">Reference</div>
+    <h2>Known Issues</h2>
+    <div class="callout success" style="margin-bottom:24px">All items below are <strong>non-blocking Phase 1 hardening items</strong>. The pipeline runs correctly, all 57 tests pass, and neither item affects normal use of the tool in its current local-only deployment context.</div>
+
+    <div class="ki-card">
+      <div class="ki-header">
+        <span class="ki-id">KI-001</span>
+        <h3><code>saveSpec()</code> write path lacks path-safety guard</h3>
+      </div>
+      <div class="ki-meta">
+        <span>Severity: Minor hardening</span>
+        <span>Component: <code>src/review/server.ts</code></span>
+        <span>Affects: approve &amp; flag endpoints</span>
+      </div>
+      <p>The read paths use a <code>safeSpecPath()</code> helper to prevent path traversal. The <code>saveSpec()</code> write path constructs its path from <code>template.template_id</code> in the JSON contents without the same guard. In theory, a crafted spec file with <code>template_id: "../../etc/shadow"</code> could write outside <code>specsDir</code>.</p>
+      <p><strong>Why it's low risk:</strong> Server is local-only. Exploiting this requires filesystem write access to <code>specsDir</code>. In normal use, all IDs come from <code>slugify()</code> which strips everything outside <code>[a-z0-9-]</code>.</p>
+      <p><strong>Intended fix:</strong> Apply the same <code>safeSpecPath()</code> guard in <code>saveSpec()</code>, or validate <code>template_id</code> matches <code>[a-z0-9-]+</code> before constructing the path.</p>
+    </div>
+
+    <div class="ki-card">
+      <div class="ki-header">
+        <span class="ki-id">KI-002</span>
+        <h3>One <code>onclick</code> in <code>renderSidebar</code> passes <code>template_id</code> without <code>esc()</code></h3>
+      </div>
+      <div class="ki-meta">
+        <span>Severity: Minor hardening</span>
+        <span>Component: <code>src/review/ui/app.html</code></span>
+        <span>Affects: sidebar rendering</span>
+      </div>
+      <p>The review UI applies <code>esc()</code> throughout to prevent XSS. One <code>onclick</code> in <code>renderSidebar</code> passes <code>t.template_id</code> directly into a JS string literal inside an HTML attribute without going through <code>esc()</code>.</p>
+      <p><strong>Why it's low risk:</strong> <code>template_id</code> values always come through <code>slugify()</code>, which strips all characters outside <code>[a-z0-9-]</code>. Injection requires manually writing a crafted spec file to disk.</p>
+      <p><strong>Intended fix:</strong> Wrap <code>t.template_id</code> in <code>esc()</code> at the affected <code>onclick</code> in <code>renderSidebar</code>.</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // ── Mermaid init ──
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      background: '#0d1f38',
+      primaryColor: '#112240',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#1e3a5f',
+      lineColor: '#2563eb',
+      secondaryColor: '#0a1628',
+      tertiaryColor: '#0d1f38',
+      edgeLabelBackground: '#0a1628',
+      fontSize: '13px',
+    }
+  });
+
+  // ── Slide toggle ──
+  let openSlide = null;
+
+  function toggleSlide(num) {
+    const panel = document.getElementById('slide-' + num);
+    const cards = document.querySelectorAll('.slide-card');
+    const card  = cards[num - 1];
+
+    if (openSlide === num) {
+      panel.classList.remove('visible');
+      card.classList.remove('active');
+      openSlide = null;
+      return;
+    }
+
+    if (openSlide !== null) {
+      document.getElementById('slide-' + openSlide).classList.remove('visible');
+      cards[openSlide - 1].classList.remove('active');
+    }
+
+    panel.classList.add('visible');
+    card.classList.add('active');
+    openSlide = num;
+
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  }
+
+  // ── FAQ accordion ──
+  function toggleFaq(btn) {
+    const item = btn.parentElement;
+    item.classList.toggle('open');
+  }
+
+  // ── Nav active highlight on scroll ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector('nav a[href="#' + e.target.id + '"]');
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

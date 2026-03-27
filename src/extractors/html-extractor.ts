@@ -13,6 +13,17 @@ function extractTokens(text: string): string[] {
   return tokens;
 }
 
+function hrefTokensFromElement($el: any, $: any, excludeSelector?: string): string[] {
+  const tokens: string[] = [];
+  let anchors = $el.find('a');
+  if (excludeSelector) anchors = anchors.not(excludeSelector);
+  anchors.each((_: any, anchor: any) => {
+    const href = $(anchor).attr('href') || '';
+    if (href) tokens.push(...extractTokens(href));
+  });
+  return tokens;
+}
+
 export class HtmlExtractorAdapter implements ExtractorAdapter {
   name = 'html';
 
@@ -50,14 +61,9 @@ export class HtmlExtractorAdapter implements ExtractorAdapter {
       .each((_, el) => {
         const text = $(el).text().trim();
         if (text && text.length > MIN_BODY_TEXT_LENGTH) {
-          // Also extract tokens from href attributes of anchor elements within this element
-          const hrefTokens: string[] = [];
-          $(el).find('a').each((__, anchor) => {
-            const href = $(anchor).attr('href') || '';
-            if (href) {
-              hrefTokens.push(...extractTokens(href));
-            }
-          });
+          // Also extract tokens from href attributes of anchor elements within this element,
+          // excluding CTA anchors to avoid duplicating ownership of their tokens
+          const hrefTokens = hrefTokensFromElement($(el), $, '[class*="button"], [class*="cta"], [class*="btn"]');
           contentBlocks.push({ type: 'body_text', text, variables: [...extractTokens(text), ...hrefTokens], order: order++ });
         }
       });
@@ -91,14 +97,7 @@ export class HtmlExtractorAdapter implements ExtractorAdapter {
     $('[class*="footer"] p').not('[class*="disclaimer"]').each((_, el) => {
       const text = $(el).text().trim();
       if (text) {
-        // Also extract tokens from href attributes of anchor elements within this element
-        const hrefTokens: string[] = [];
-        $(el).find('a').each((__, anchor) => {
-          const href = $(anchor).attr('href') || '';
-          if (href) {
-            hrefTokens.push(...extractTokens(href));
-          }
-        });
+        const hrefTokens = hrefTokensFromElement($(el), $);
         contentBlocks.push({ type: 'footer_content', text, variables: [...extractTokens(text), ...hrefTokens], order: order++ });
       }
     });
@@ -108,11 +107,11 @@ export class HtmlExtractorAdapter implements ExtractorAdapter {
     let moduleOrder = 0;
 
     if ($('[class*="header"]').length) {
-      uiModules.push({ type: 'header', order: moduleOrder++, contentBlockIndices: [] });
+      uiModules.push({ type: 'header', order: moduleOrder++, contentBlockIndices: [] }); // no text content
     }
 
     if ($('[class*="hero"]').length) {
-      uiModules.push({ type: 'hero', order: moduleOrder++, contentBlockIndices: [] });
+      uiModules.push({ type: 'hero', order: moduleOrder++, contentBlockIndices: [] }); // no text content
     }
 
     const textBlockIndices = contentBlocks.reduce<number[]>((acc, b, i) => {
@@ -130,7 +129,7 @@ export class HtmlExtractorAdapter implements ExtractorAdapter {
     });
 
     if ($('hr, [class*="divider"]').length) {
-      uiModules.push({ type: 'divider', order: moduleOrder++, contentBlockIndices: [] });
+      uiModules.push({ type: 'divider', order: moduleOrder++, contentBlockIndices: [] }); // structural element
     }
 
     if ($('[class*="footer"]').length) {

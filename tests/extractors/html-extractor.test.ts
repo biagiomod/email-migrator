@@ -69,14 +69,18 @@ describe('HtmlExtractorAdapter', () => {
 
   it('assigns order values to content blocks', () => {
     const result = extractor.extract(fixtureHtml, fixturePath, 'sample-welcome');
-    result.contentBlocks.forEach((block) => {
-      expect(typeof block.order).toBe('number');
+    const orders = result.contentBlocks.map(b => b.order);
+    const unique = new Set(orders);
+    expect(unique.size).toBe(orders.length); // all distinct
+    orders.forEach((v, i) => {
+      if (i > 0) expect(v).toBeGreaterThan(orders[i - 1]);
     });
   });
 
   it('canHandle accepts uppercase .HTML extension', () => {
     expect(extractor.canHandle('templates/welcome.HTML')).toBe(true);
     expect(extractor.canHandle('templates/welcome.HTM')).toBe(true);
+    expect(extractor.canHandle('templates/welcome.htm')).toBe(true);
   });
 
   it('extracts href-only tokens from footer anchor elements', () => {

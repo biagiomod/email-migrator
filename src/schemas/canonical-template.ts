@@ -81,8 +81,8 @@ export const MappingResult = z.object({
 });
 
 export const CanonicalTemplate = z.object({
-  template_id: z.string(),
-  source_file: z.string(),
+  template_id: z.string().min(1),
+  source_file: z.string().min(1),
   template_family: z.string().optional(),
   message_type: z.string().optional(),
   content_blocks: z.array(ContentBlock),

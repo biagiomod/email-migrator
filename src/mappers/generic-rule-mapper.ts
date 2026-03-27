@@ -1,11 +1,11 @@
 // src/mappers/generic-rule-mapper.ts
-import { ContentBlock, UiModule, MappingResult, CanonicalTemplate } from '../schemas/canonical-template';
+import { ContentBlock, UiModule, MappingResult, CanonicalTemplate, MatchType } from '../schemas/canonical-template';
 import { MapperAdapter } from './types';
 
 // Rule tables: componentType → { targetModule, matchType, confidence, reason }
 type MappingRule = {
   targetModule: string;
-  matchType: MappingResult['match_type'];
+  matchType: MatchType;
   confidence: number;
   reason: string;
 };

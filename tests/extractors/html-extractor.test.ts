@@ -73,4 +73,15 @@ describe('HtmlExtractorAdapter', () => {
       expect(typeof block.order).toBe('number');
     });
   });
+
+  it('canHandle accepts uppercase .HTML extension', () => {
+    expect(extractor.canHandle('templates/welcome.HTML')).toBe(true);
+    expect(extractor.canHandle('templates/welcome.HTM')).toBe(true);
+  });
+
+  it('extracts href-only tokens from footer anchor elements', () => {
+    const result = extractor.extract(fixtureHtml, fixturePath, 'sample-welcome');
+    expect(result.variables).toContain('{{unsubscribeUrl}}');
+    expect(result.variables).toContain('{{privacyUrl}}');
+  });
 });

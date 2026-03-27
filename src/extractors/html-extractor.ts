@@ -1,12 +1,12 @@
 import * as cheerio from 'cheerio';
 import { ExtractorAdapter, RawContentBlock, RawExtractedTemplate, RawUiModule } from './types';
 
-const TOKEN_PATTERN = /\{\{([^}]+)\}\}|\[\[([^\]]+)\]\]|\[([A-Z_]{2,})\]/g;
+const MIN_BODY_TEXT_LENGTH = 10; // filter out whitespace-only cells and layout artifacts
 
 function extractTokens(text: string): string[] {
+  const TOKEN_PATTERN = /\{\{([^}]+)\}\}|\[\[([^\]]+)\]\]|\[([A-Z_]{2,})\]/g;
   const tokens: string[] = [];
   let match: RegExpExecArray | null;
-  TOKEN_PATTERN.lastIndex = 0;
   while ((match = TOKEN_PATTERN.exec(text)) !== null) {
     tokens.push(match[0]);
   }
@@ -17,7 +17,8 @@ export class HtmlExtractorAdapter implements ExtractorAdapter {
   name = 'html';
 
   canHandle(filePath: string): boolean {
-    return filePath.endsWith('.html') || filePath.endsWith('.htm');
+    const lower = filePath.toLowerCase();
+    return lower.endsWith('.html') || lower.endsWith('.htm');
   }
 
   extract(html: string, filePath: string, templateId: string): RawExtractedTemplate {
@@ -48,25 +49,35 @@ export class HtmlExtractorAdapter implements ExtractorAdapter {
       .not('[class*="footer"] p, [class*="disclaimer"] p')
       .each((_, el) => {
         const text = $(el).text().trim();
-        if (text && text.length > 10) {
-          contentBlocks.push({ type: 'body_text', text, variables: extractTokens(text), order: order++ });
+        if (text && text.length > MIN_BODY_TEXT_LENGTH) {
+          // Also extract tokens from href attributes of anchor elements within this element
+          const hrefTokens: string[] = [];
+          $(el).find('a').each((__, anchor) => {
+            const href = $(anchor).attr('href') || '';
+            if (href) {
+              hrefTokens.push(...extractTokens(href));
+            }
+          });
+          contentBlocks.push({ type: 'body_text', text, variables: [...extractTokens(text), ...hrefTokens], order: order++ });
         }
       });
 
-    // CTA: anchor tags styled as buttons
-    $('a[class*="button"], a[class*="cta"], a[class*="btn"]').each((_, el) => {
-      const text = $(el).text().trim();
-      const href = $(el).attr('href') || '';
-      if (text) {
-        contentBlocks.push({
-          type: 'cta',
-          text,
-          url: href || undefined,
-          variables: [...extractTokens(text), ...extractTokens(href)],
-          order: order++,
-        });
-      }
-    });
+    // CTA: anchor tags styled as buttons, excluding footer elements
+    $('a[class*="button"], a[class*="cta"], a[class*="btn"]')
+      .not('[class*="footer"] a, [class*="footer"]')
+      .each((_, el) => {
+        const text = $(el).text().trim();
+        const href = $(el).attr('href') || '';
+        if (text) {
+          contentBlocks.push({
+            type: 'cta',
+            text,
+            url: href || undefined,
+            variables: [...extractTokens(text), ...extractTokens(href)],
+            order: order++,
+          });
+        }
+      });
 
     // Disclaimer: elements with disclaimer/legal class
     $('[class*="disclaimer"], [class*="legal"]').each((_, el) => {
@@ -80,7 +91,15 @@ export class HtmlExtractorAdapter implements ExtractorAdapter {
     $('[class*="footer"] p').not('[class*="disclaimer"]').each((_, el) => {
       const text = $(el).text().trim();
       if (text) {
-        contentBlocks.push({ type: 'footer_content', text, variables: extractTokens(text), order: order++ });
+        // Also extract tokens from href attributes of anchor elements within this element
+        const hrefTokens: string[] = [];
+        $(el).find('a').each((__, anchor) => {
+          const href = $(anchor).attr('href') || '';
+          if (href) {
+            hrefTokens.push(...extractTokens(href));
+          }
+        });
+        contentBlocks.push({ type: 'footer_content', text, variables: [...extractTokens(text), ...hrefTokens], order: order++ });
       }
     });
 

@@ -31,8 +31,10 @@ export function checkRequiredCompliance(template: CanonicalTemplate): QaIssue[] 
 
 export function checkVariableConsistency(template: CanonicalTemplate): QaIssue[] {
   const templateTokens = new Set(template.variables.map(v => v.token));
+  const blockTokens = new Set(template.content_blocks.flatMap(b => b.variables));
   const issues: QaIssue[] = [];
 
+  // Block-level tokens missing from template-level declaration
   template.content_blocks.forEach(block => {
     block.variables.forEach(token => {
       if (!templateTokens.has(token)) {
@@ -44,6 +46,17 @@ export function checkVariableConsistency(template: CanonicalTemplate): QaIssue[]
         });
       }
     });
+  });
+
+  // Template-level variables not referenced in any block
+  template.variables.forEach(variable => {
+    if (!blockTokens.has(variable.token)) {
+      issues.push({
+        code: 'UNUSED_TEMPLATE_VARIABLE',
+        severity: 'warning',
+        message: `Token "${variable.token}" declared in template variables but not referenced in any content block.`,
+      });
+    }
   });
 
   return issues;

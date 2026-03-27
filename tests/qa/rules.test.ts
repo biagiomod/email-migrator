@@ -31,7 +31,7 @@ describe('runAllRules()', () => {
   it('returns error when template has no content blocks', () => {
     const empty: CanonicalTemplate = { ...validTemplate, content_blocks: [], ui_modules: [] };
     const issues = runAllRules(empty);
-    expect(issues.some(i => i.severity === 'error' && i.code === 'EMPTY_TEMPLATE')).toBe(true);
+    expect(issues.filter(i => i.code === 'EMPTY_TEMPLATE')).toHaveLength(1);
   });
 
   it('returns error when required compliance marker is missing', () => {
@@ -40,7 +40,7 @@ describe('runAllRules()', () => {
       compliance: [{ family: 'general-disclaimer', required: true, present: false }],
     };
     const issues = runAllRules(noncompliant);
-    expect(issues.some(i => i.severity === 'error' && i.code === 'MISSING_REQUIRED_COMPLIANCE')).toBe(true);
+    expect(issues.filter(i => i.code === 'MISSING_REQUIRED_COMPLIANCE')).toHaveLength(1);
   });
 
   it('returns warning when block variable is not in template variables', () => {
@@ -53,6 +53,18 @@ describe('runAllRules()', () => {
     };
     const issues = runAllRules(inconsistent);
     expect(issues.some(i => i.severity === 'warning' && i.code === 'VARIABLE_INCONSISTENCY')).toBe(true);
+  });
+
+  it('returns warning when template variable is not referenced in any block', () => {
+    const stale: CanonicalTemplate = {
+      ...validTemplate,
+      content_blocks: [
+        { id: 'test-01:headline:0', type: 'headline', order: 0, text: 'Hello', variables: [], condition_ids: [] },
+      ],
+      variables: [{ token: '{{orphanToken}}', type: 'string' }],
+    };
+    const issues = runAllRules(stale);
+    expect(issues.filter(i => i.code === 'UNUSED_TEMPLATE_VARIABLE')).toHaveLength(1);
   });
 
   it('returns warning when UI module references non-existent content block ID', () => {

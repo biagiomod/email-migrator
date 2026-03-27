@@ -17,7 +17,7 @@ export function ingest(sourceDir: string): TemplateEntry[] {
     throw new Error(`Source directory not found: ${sourceDir}`);
   }
 
-  return fs.readdirSync(sourceDir)
+  const entries = fs.readdirSync(sourceDir)
     .filter(f => f.endsWith('.html') || f.endsWith('.htm'))
     .sort()
     .map(fileName => ({
@@ -25,4 +25,21 @@ export function ingest(sourceDir: string): TemplateEntry[] {
       templateId: slugify(path.basename(fileName, path.extname(fileName))),
       fileName,
     }));
+
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    if (!entry.templateId) {
+      throw new Error(
+        `Cannot derive a valid templateId from filename "${entry.fileName}". Rename the file to use alphanumeric characters.`
+      );
+    }
+    if (seen.has(entry.templateId)) {
+      throw new Error(
+        `templateId collision: "${entry.templateId}" produced by "${entry.fileName}". Rename the source file to avoid ambiguity.`
+      );
+    }
+    seen.add(entry.templateId);
+  }
+
+  return entries;
 }

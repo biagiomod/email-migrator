@@ -36,11 +36,19 @@ export function runPipeline(options: RunOptions): RunResult {
   const templates: CanonicalTemplate[] = [];
   for (const entry of manifest) {
     console.log(`[extract] ${entry.fileName}`);
-    const html = fs.readFileSync(entry.filePath, 'utf-8');
+    let html: string;
+    try {
+      html = fs.readFileSync(entry.filePath, 'utf-8');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`[extract] Failed to read "${entry.fileName}": ${msg}`);
+    }
     const raw = extractor.extract(html, entry.filePath, entry.templateId);
+    console.log(`[normalize] ${entry.fileName}`);
     const canonical = normalize(raw, entry.templateId);
     templates.push(canonical);
   }
+  console.log(`[map] Running component mapping...`);
 
   // MAP + ASSESS (assess runs mapper internally)
   console.log(`[assess] Running QA and mapping...`);

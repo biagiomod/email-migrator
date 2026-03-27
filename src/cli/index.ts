@@ -19,13 +19,25 @@ program
     console.log(`Source: ${sourceDir}`);
     console.log(`Specs:  ${specsDir}\n`);
 
-    const result = runPipeline({ sourceDir, specsDir });
+    let result;
+    try {
+      result = runPipeline({ sourceDir, specsDir });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`\nPipeline failed: ${message}`);
+      process.exit(1);
+    }
 
     console.log(`\n--- Pipeline complete ---`);
     console.log(`Total:        ${result.total}`);
     console.log(`Ready:        ${result.ready}`);
     console.log(`Needs review: ${result.needsReview}`);
     console.log(`Blocked:      ${result.blocked}`);
+
+    if (result.total === 0) {
+      console.warn('\nNo templates found. Nothing was processed.');
+      return;
+    }
 
     if (result.blocked > 0) {
       console.error(`\n✗ ${result.blocked} template(s) are BLOCKED. Review spec files in ${specsDir} for error details.`);
@@ -47,6 +59,10 @@ program
     const specsDir = path.resolve(options.specs);
     const sourceDir = path.resolve(options.source);
     const port = parseInt(options.port, 10);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      console.error(`Invalid port: "${options.port}". Must be an integer between 1 and 65535.`);
+      process.exit(1);
+    }
     startReviewServer({ specsDir, sourceDir, port });
   });
 

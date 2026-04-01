@@ -1,1 +1,246 @@
-<!DOCTYPE html><html><body>dashboard placeholder</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Migrator — Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+    header { background: #1a1a2e; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1rem; font-weight: 600; }
+    header a { color: #93c5fd; font-size: 0.8rem; text-decoration: none; }
+
+    .layout { display: flex; gap: 20px; padding: 20px 24px; align-items: flex-start; }
+    .panel-pipeline { flex: 0 0 340px; background: white; border-radius: 8px; border: 1px solid #e0e0e0; padding: 20px; }
+    .panel-queue { flex: 1; background: white; border-radius: 8px; border: 1px solid #e0e0e0; padding: 20px; }
+
+    @media (max-width: 900px) {
+      .layout { flex-direction: column; }
+      .panel-pipeline { flex: unset; width: 100%; }
+    }
+
+    h2 { font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; color: #1a1a2e; }
+    .dir-label { font-size: 0.75rem; color: #666; margin-bottom: 4px; }
+    .dir-value { font-size: 0.78rem; font-family: monospace; background: #f4f4f4; padding: 5px 8px; border-radius: 4px; margin-bottom: 12px; word-break: break-all; }
+
+    .progress-bar-track { background: #e5e7eb; border-radius: 4px; height: 8px; margin-bottom: 6px; overflow: hidden; }
+    .progress-bar-fill { background: #2563eb; height: 100%; border-radius: 4px; transition: width 0.4s; width: 0%; }
+    .progress-label { font-size: 0.75rem; color: #6b7280; margin-bottom: 12px; }
+
+    .counts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .count-item { background: #f8f9fa; border-radius: 6px; padding: 8px 10px; }
+    .count-item .num { font-size: 1.2rem; font-weight: 700; }
+    .count-item .lbl { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+    .count-ready .num { color: #15803d; }
+    .count-review .num { color: #b45309; }
+    .count-blocked .num { color: #b91c1c; }
+    .count-total .num { color: #1e40af; }
+
+    button { cursor: pointer; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; padding: 9px 16px; }
+    .btn-run { background: #2563eb; color: white; width: 100%; margin-bottom: 0; }
+    .btn-run:hover { background: #1d4ed8; }
+    .btn-run:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    .queue-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .queue-toolbar select { font-size: 0.8rem; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 5px; background: white; }
+    .btn-batch { background: #15803d; color: white; font-size: 0.8rem; padding: 6px 12px; }
+    .btn-batch:hover { background: #166534; }
+    .btn-batch:disabled { background: #86efac; cursor: not-allowed; }
+
+    .queue-list { display: flex; flex-direction: column; gap: 6px; }
+    .queue-row { display: flex; align-items: center; background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; cursor: pointer; text-decoration: none; color: inherit; }
+    .queue-row:hover { background: #e8f0fe; border-color: #2563eb; }
+    .queue-row .filename { flex: 1; font-size: 0.85rem; font-weight: 500; word-break: break-all; }
+    .queue-row .meta { font-size: 0.72rem; color: #6b7280; margin-top: 2px; }
+    .badge { padding: 3px 9px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; margin-left: 8px; }
+    .badge-ready { background: #dcfce7; color: #15803d; }
+    .badge-needs_review { background: #fef3c7; color: #b45309; }
+    .badge-blocked { background: #fee2e2; color: #b91c1c; }
+    .arrow { margin-left: 8px; color: #2563eb; font-size: 0.9rem; }
+
+    .empty { text-align: center; color: #9ca3af; padding: 32px; font-size: 0.875rem; }
+    #status-msg { font-size: 0.78rem; color: #6b7280; margin-top: 8px; min-height: 1.2em; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Email Migrator — Content Designer Dashboard</h1>
+    <a href="/">Original Review UI →</a>
+  </header>
+
+  <div class="layout">
+    <!-- Left: Pipeline control -->
+    <div class="panel-pipeline">
+      <h2>Run Migration Pipeline</h2>
+      <div class="dir-label">Source templates</div>
+      <div class="dir-value" id="src-dir">—</div>
+      <div class="dir-label">Specs output</div>
+      <div class="dir-value" id="specs-dir">—</div>
+
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+      <div class="progress-label" id="progress-label">Not started</div>
+
+      <div class="counts">
+        <div class="count-item count-total"><div class="num" id="cnt-total">—</div><div class="lbl">Total</div></div>
+        <div class="count-item count-ready"><div class="num" id="cnt-ready">—</div><div class="lbl">Ready</div></div>
+        <div class="count-item count-review"><div class="num" id="cnt-review">—</div><div class="lbl">Needs review</div></div>
+        <div class="count-item count-blocked"><div class="num" id="cnt-blocked">—</div><div class="lbl">Blocked</div></div>
+      </div>
+
+      <button class="btn-run" id="run-btn" onclick="runPipeline()">▶ Run Pipeline</button>
+      <div id="status-msg"></div>
+    </div>
+
+    <!-- Right: Review queue -->
+    <div class="panel-queue">
+      <div class="queue-toolbar">
+        <h2 style="margin:0">Review Queue <span id="queue-count" style="font-weight:400;color:#6b7280;font-size:0.82rem"></span></h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="filter-select" onchange="renderQueue()">
+            <option value="all">All</option>
+            <option value="needs_review">Needs review</option>
+            <option value="blocked">Blocked</option>
+            <option value="ready">Ready</option>
+          </select>
+          <button class="btn-batch" id="batch-btn" onclick="batchApprove()">Batch Approve Ready</button>
+        </div>
+      </div>
+      <div class="queue-list" id="queue-list">
+        <div class="empty">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allSpecs = [];
+    let polling = null;
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    async function loadSpecs() {
+      try {
+        const r = await fetch('/api/specs');
+        if (!r.ok) return;
+        allSpecs = await r.json();
+        renderQueue();
+      } catch(e) { /* network error */ }
+    }
+
+    function renderQueue() {
+      const filter = document.getElementById('filter-select').value;
+      const filtered = filter === 'all' ? allSpecs : allSpecs.filter(s => s.status === filter);
+      document.getElementById('queue-count').textContent = '(' + filtered.length + ' shown, ' + allSpecs.length + ' total)';
+      const el = document.getElementById('queue-list');
+      if (filtered.length === 0) {
+        el.innerHTML = '<div class="empty">No templates to show.</div>';
+        return;
+      }
+      el.innerHTML = filtered.map(s => '<a class="queue-row" href="/editor?id=' + esc(s.template_id) + '">' +
+        '<div>' +
+        '<div class="filename">' + esc(s.source_file) + '</div>' +
+        (s.reviewed_by ? '<div class="meta">Reviewed by ' + esc(s.reviewed_by) + (s.reviewed_at ? ' · ' + new Date(s.reviewed_at).toLocaleString() : '') + '</div>' : '') +
+        '</div>' +
+        '<span class="badge badge-' + esc(s.status) + '">' + esc(s.status.replace('_',' ')) + '</span>' +
+        '<span class="arrow">›</span>' +
+        '</a>').join('');
+    }
+
+    async function runPipeline() {
+      const btn = document.getElementById('run-btn');
+      btn.disabled = true;
+      btn.textContent = 'Running…';
+      document.getElementById('status-msg').textContent = 'Pipeline started…';
+      try {
+        const r = await fetch('/api/pipeline/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+        if (!r.ok) {
+          document.getElementById('status-msg').textContent = 'Failed to start pipeline.';
+          btn.disabled = false; btn.textContent = '▶ Run Pipeline';
+          return;
+        }
+      } catch(e) {
+        document.getElementById('status-msg').textContent = 'Error: ' + e.message;
+        btn.disabled = false; btn.textContent = '▶ Run Pipeline';
+        return;
+      }
+      startPolling();
+    }
+
+    function startPolling() {
+      if (polling) clearInterval(polling);
+      polling = setInterval(async function() {
+        try {
+          const r = await fetch('/api/pipeline/status');
+          if (!r.ok) return;
+          const data = await r.json();
+          updatePipelineUI(data);
+          if (data.state === 'done' || data.state === 'error') {
+            clearInterval(polling); polling = null;
+            document.getElementById('run-btn').disabled = false;
+            document.getElementById('run-btn').textContent = '▶ Run Pipeline';
+            loadSpecs();
+          }
+        } catch(e) { /* ignore */ }
+      }, 2000);
+    }
+
+    function updatePipelineUI(data) {
+      const total = data.total || 0;
+      const ready = data.ready || 0;
+      const needsReview = data.needsReview || 0;
+      const blocked = data.blocked || 0;
+      document.getElementById('cnt-total').textContent = total || '—';
+      document.getElementById('cnt-ready').textContent = ready || '—';
+      document.getElementById('cnt-review').textContent = needsReview || '—';
+      document.getElementById('cnt-blocked').textContent = blocked || '—';
+      const pct = total > 0 ? Math.round(((ready + needsReview + blocked) / total) * 100) : 0;
+      document.getElementById('progress-bar').style.width = pct + '%';
+      if (data.state === 'running') {
+        document.getElementById('progress-label').textContent = 'Running…';
+        document.getElementById('status-msg').textContent = '';
+      } else if (data.state === 'done') {
+        document.getElementById('progress-label').textContent = 'Complete — ' + total + ' template(s) processed';
+        document.getElementById('status-msg').textContent = '';
+      } else if (data.state === 'error') {
+        document.getElementById('progress-label').textContent = 'Pipeline error';
+        document.getElementById('status-msg').textContent = data.error || 'Unknown error';
+      } else {
+        document.getElementById('progress-label').textContent = 'Not started';
+      }
+    }
+
+    async function batchApprove() {
+      const btn = document.getElementById('batch-btn');
+      btn.disabled = true;
+      try {
+        const r = await fetch('/api/batch-approve', { method: 'POST' });
+        if (!r.ok) { btn.disabled = false; return; }
+        const data = await r.json();
+        if (data.ok) { await loadSpecs(); }
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // On load: check pipeline status and load specs
+    fetch('/api/pipeline/status').then(function(r) { return r.ok ? r.json() : null; }).then(function(data) {
+      if (data) {
+        updatePipelineUI(data);
+        if (data.state === 'running') {
+          document.getElementById('run-btn').disabled = true;
+          document.getElementById('run-btn').textContent = 'Running…';
+          startPolling();
+        }
+      }
+    }).catch(function() {});
+
+    loadSpecs();
+  </script>
+</body>
+</html>

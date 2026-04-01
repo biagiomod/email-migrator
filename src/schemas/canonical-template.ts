@@ -43,6 +43,10 @@ export const ContentBlock = z.object({
   url: z.string().url().optional(),
   variables: z.array(z.string()),
   condition_ids: z.array(z.string()),
+  // Reviewer annotation (Phase 2)
+  edited_by: z.string().optional(),
+  edited_at: z.string().optional(),
+  edited_value: z.string().optional(),
 });
 
 export const UiModule = z.object({
@@ -94,6 +98,9 @@ export const CanonicalTemplate = z.object({
   status: z.enum(['ready', 'needs_review', 'blocked']),
   review_notes: z.string().optional(),
   assessed_at: z.string().datetime().optional(),
+  reviewed_by: z.string().optional(),
+  reviewed_at: z.string().optional(),
+  editor_status: z.enum(['approved', 'flagged', 'pending']).optional(),
 });
 
 export type ContentBlock = z.infer<typeof ContentBlock>;

@@ -17,11 +17,11 @@ export function parseGuidelines(raw: string): Guidelines {
   const charLimits: Record<string, number> = {};
   const forbiddenTerms: string[] = [];
 
-  const fenceRe = /```(\S+)\n([\s\S]*?)```/g;
+  const fenceRe = /```(\S+)\r?\n([\s\S]*?)```/g;
   let match: RegExpExecArray | null;
 
   while ((match = fenceRe.exec(raw)) !== null) {
-    const lang = match[1];
+    const lang = match[1].trim();
     const body = match[2];
 
     if (lang === 'char-limits') {

@@ -56,4 +56,9 @@ please be advised
     expect(result.charLimits).toEqual({});
     expect(result.forbiddenTerms).toEqual([]);
   });
+
+  it('handles CRLF line endings', () => {
+    const raw = '```char-limits\r\nheadline: 80\r\ncta: 30\r\n```';
+    expect(parseGuidelines(raw).charLimits).toEqual({ headline: 80, cta: 30 });
+  });
 });

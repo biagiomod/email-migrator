@@ -2,7 +2,7 @@ node_modules/
 dist/
 
 # Generated pipeline output
-specs/
+/specs/
 demo/specs/
 
 # Tool internals

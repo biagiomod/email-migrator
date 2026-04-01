@@ -216,13 +216,23 @@ export function createReviewApp(options: ReviewServerOptions): express.Applicati
       blocks?: Array<{ id: string; edited_value: string }>;
     };
 
+    // Validate blocks array entries
+    if (Array.isArray(blocks)) {
+      for (const b of blocks) {
+        if (typeof b.id !== 'string' || typeof b.edited_value !== 'string') {
+          return res.status(400).json({ error: 'Invalid block entry: id and edited_value must be strings' });
+        }
+      }
+    }
+
     const now = new Date().toISOString();
     const blockEdits = new Map((blocks ?? []).map(b => [b.id, b.edited_value]));
 
+    const hasEdits = (blocks ?? []).length > 0 || reviewed_by !== undefined;
     const updated: CanonicalTemplate = {
       ...spec,
       reviewed_by: reviewed_by ?? spec.reviewed_by,
-      reviewed_at: now,
+      reviewed_at: hasEdits ? now : spec.reviewed_at,
       content_blocks: spec.content_blocks.map(cb => {
         const editedValue = blockEdits.get(cb.id);
         if (editedValue === undefined) return cb;
@@ -278,6 +288,11 @@ export function createReviewApp(options: ReviewServerOptions): express.Applicati
           $el.css('cursor', 'pointer');
         }
       });
+      // Check if annotation was applied (for diagnostic logging)
+      const found = $(`[data-block-id="${cb.id}"]`).length > 0;
+      if (!found) {
+        console.warn(`[preview] No element found for block "${cb.id}" (text: "${needle.slice(0, 40)}")`);
+      }
     }
 
     const script = `<script>

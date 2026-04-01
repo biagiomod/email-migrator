@@ -108,6 +108,7 @@ describe('GET /api/spec/:id/preview', () => {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/html/);
     expect(res.text).toContain('data-block-id="payment-reminder:headline:0"');
+    expect(res.text).toContain('data-block-id="payment-reminder:cta:0"');
     expect(res.text).toContain('postMessage');
   });
 });

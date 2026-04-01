@@ -95,6 +95,11 @@ describe('PATCH /api/spec/:id', () => {
     const res = await request(makeApp()).patch('/api/spec/ghost').send({ reviewed_by: 'x', blocks: [] });
     expect(res.status).toBe(404);
   });
+
+  it('returns 400 for path-traversal attempt', async () => {
+    const res = await request(makeApp()).patch('/api/spec/..%2Fpasswd').send({ reviewed_by: 'x', blocks: [] });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('GET /api/spec/:id/preview', () => {

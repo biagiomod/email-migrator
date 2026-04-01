@@ -31,7 +31,12 @@ npx tsx src/cli/index.ts review \
   --source ./fixtures
 ```
 
-Open `http://localhost:3000` in your browser.
+Open `http://localhost:3000/dashboard` in your browser.
+
+- **Dashboard** — trigger the pipeline, view the review queue, batch-approve ready templates
+- **Editor** — click any template row to open the split-pane editor (email preview left, edit form right)
+
+Content validation rules (char limits, forbidden terms) are read from `SKILL.md` in the project root. Edit that file at any time — no server restart needed.
 
 ## Try the demo fixture
 

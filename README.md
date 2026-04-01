@@ -2,7 +2,7 @@
 
 A taxonomy-first tool for migrating HTML email templates from one template system to another. Instead of converting templates directly, it classifies every content and layout element against a shared canonical vocabulary, maps those elements to their target equivalents, and produces structured migration specs. No target output is generated until a human reviewer approves.
 
-**Phase 1 complete — 57 tests passing.**
+**Phase 2 complete — 86 tests passing.**
 
 ---
 
@@ -54,7 +54,11 @@ npx tsx src/cli/index.ts review \
   --port 3333
 ```
 
-Open `http://localhost:3333`.
+Open `http://localhost:3333/dashboard` — the Content Designer home screen.
+
+- **Dashboard** (`/dashboard`) — trigger the pipeline, see the review queue, batch-approve ready templates
+- **Editor** (`/editor?id=<templateId>`) — split-pane email preview + edit form per template
+- **Legacy list** (`/`) — original template list view
 
 **Run with your own templates:**
 
@@ -110,15 +114,18 @@ src/
   mappers/              — Rule-based mapper (pluggable adapter)
   qa/                   — QA rule engine
   assess/               — ASSESS stage (the only disk writer)
-  review/               — Express server + vanilla JS review UI
+  review/               — Express server + vanilla JS review UI (dashboard, editor, legacy list)
+    guidelines.ts       — SKILL.md parser (char limits + forbidden terms)
   schemas/              — Zod schema for CanonicalTemplate
   export/               — ExportAdapter stub (Phase 2)
   ai/                   — ClassifierAdapter stub (Phase 2)
 
 fixtures/               — Sample templates for testing
+source-templates/       — Your source HTML email templates (add files here)
 demo/fixtures/          — Demo template (payment reminder)
 tests/                  — Unit + e2e tests
 docs/superpowers/       — Full documentation
+SKILL.md                — Content guidelines: char limits + forbidden terms (edit freely)
 ```
 
 ---
@@ -135,7 +142,7 @@ Full documentation is in [`docs/superpowers/`](docs/superpowers/). Open [`docs/s
 | [Demo Guide](docs/superpowers/demo-guide.md) | 2-min and 5-min demo scripts, talking points |
 | [Stakeholder Presentation](docs/superpowers/stakeholder-presentation.md) | Slide deck, diagrams, exec summary, walkthrough |
 | [FAQ](docs/superpowers/faq.md) | Plain-language Q&A |
-| [Known Issues](docs/superpowers/known-issues.md) | Phase 1 hardening items (non-blocking) |
+| [Known Issues](docs/superpowers/known-issues.md) | Hardening items — KI-001 resolved in Phase 2 |
 
 ---
 

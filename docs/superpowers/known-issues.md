@@ -1,25 +1,19 @@
 # Known Issues
 
-All items listed here are **non-blocking Phase 1 hardening items**. The pipeline runs correctly, all 57 tests pass, and neither item affects normal use of the tool in its current local-only deployment context.
+KI-002 remains open (non-blocking). KI-001 was resolved in Phase 2.
 
 ---
 
-## KI-001 — `saveSpec()` write path lacks path-safety guard
+## ~~KI-001 — `saveSpec()` write path lacks path-safety guard~~ ✅ Resolved in Phase 2
 
 **Severity:** Minor hardening (non-blocking)
 **Component:** `src/review/server.ts` — `saveSpec()` function
-**Affects:** Review server, approve and flag endpoints
+**Resolved:** Phase 2 — `saveSpec()` now calls `safeSpecPath()` before writing and throws on invalid IDs. All call sites wrapped in try/catch.
 
-**Description:**
+~~**Description:**
 The review server's read paths (`GET /api/templates/:id`, `POST .../approve`, `POST .../flag`) all use a `safeSpecPath()` helper that resolves the path and confirms it stays within the `--specs` directory before reading. This prevents path traversal on read.
 
-The `saveSpec()` function, called when a reviewer approves or flags a template, constructs its write path using `template.template_id` read from the spec JSON contents — not from the URL parameter that was validated. `path.join` does not strip `..` components, so a spec file with a crafted `template_id` (e.g. `../../etc/shadow`) could in theory write outside `specsDir`.
-
-**Why it's low risk:**
-The server is local-only. Exploiting this requires an attacker to have already written a crafted JSON file into `specsDir`, which requires filesystem write access. In normal use, all spec files are written by the pipeline, which derives IDs from slugified file names (`[a-z0-9-]+` only).
-
-**Intended fix:**
-Apply the same `safeSpecPath()` guard before the write in `saveSpec()`, or validate that `template.template_id` matches `[a-z0-9-]+` before constructing the path.
+The `saveSpec()` function, called when a reviewer approves or flags a template, constructs its write path using `template.template_id` read from the spec JSON contents — not from the URL parameter that was validated. `path.join` does not strip `..` components, so a spec file with a crafted `template_id` (e.g. `../../etc/shadow`) could in theory write outside `specsDir`.~~
 
 ---
 

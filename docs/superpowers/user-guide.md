@@ -104,24 +104,49 @@ Opens a local review server at `http://localhost:3000` (or `--port <number>` to 
 
 The server runs until you stop it with `Ctrl+C`.
 
+Navigate to `http://localhost:3000/dashboard` to start.
+
 ---
 
-## How approvals work
+## How the Content Designer UI works
 
-In the review UI:
+The review UI has two pages: **Dashboard** and **Editor**.
 
-1. **Sidebar** lists all templates with status badges: `ready`, `needs_review`, `blocked`
-2. **Click a template** to open the full spec detail
-3. The detail shows:
-   - Content blocks (type, text, variables)
-   - UI modules
-   - Mapping results (target module, confidence, reason, match type)
-   - QA notes (if any)
-4. Click **Approve** to approve the template
-5. Click **Flag** to flag it with a note (prompts for text)
-6. **Batch approve** (top of sidebar) approves all `ready` templates at once
+### Dashboard (`/dashboard`)
 
-Approvals update the spec JSON on disk immediately. `review_status` on each mapping result is set to `approved` or `flagged`.
+- **Pipeline panel (left)** — shows source and specs paths, a **Run Pipeline** button, a live progress bar, and counts by status. Polls every 2 seconds while the pipeline is running.
+- **Review queue (right)** — lists every spec with filename, status badge, and reviewer name/timestamp if already reviewed. Filter by status (All / needs_review / ready / blocked). Click any row to open the Editor. **Batch Approve All Ready** approves all `ready` specs at once.
+
+### Editor (`/editor?id=<templateId>`)
+
+- **Left panel** — sandboxed iframe rendering the original source HTML. Click any highlighted text element to jump to the matching form field on the right.
+- **Right panel** — reviewer name field (persisted in `localStorage`), one textarea per editable content block, inline warnings for char-limit overruns and forbidden terms (non-blocking). Three actions:
+  - **Save & Approve** — saves edits to the spec JSON, marks it approved, advances to the next unreviewed template
+  - **Flag** — saves edits with an optional note, marks it flagged
+  - **Guidelines** — slides open a panel showing the full `SKILL.md` rendered as HTML
+
+### Reviewer annotations
+
+Edits and approvals are written back into the spec JSON. The original extracted values are never overwritten — both `value` (original) and `edited_value` (reviewer's version) are preserved. Each edited block also records `edited_by` and `edited_at`.
+
+### SKILL.md — content guidelines
+
+`SKILL.md` in the project root defines the validation rules the editor enforces:
+
+```markdown
+```char-limits
+headline: 80
+subject_line: 60
+cta: 30
+```
+
+```forbidden-terms
+synergy
+leverage
+```
+```
+
+Edit this file directly in any text editor. Changes are picked up immediately — no server restart. If the file is absent or malformed, validation warnings are silently skipped.
 
 **Blocked templates cannot be approved.** Fix the underlying issue, re-run the pipeline, and review again.
 
@@ -156,10 +181,11 @@ When Phase 2 is built, the export adapter reads approved specs and generates Tar
 
 4. Launch the review UI:
    npx tsx src/cli/index.ts review --specs ./specs --source ./templates
+   Open http://localhost:3000/dashboard
 
 5. Review each template in the browser.
-   - Batch-approve all "ready" templates.
-   - Review and approve/flag "needs_review" templates individually.
+   - Batch-approve all "ready" templates from the dashboard.
+   - Click "needs_review" templates to open the editor, edit content, then Save & Approve or Flag.
 
 6. When all approved, export (Phase 2).
 ```

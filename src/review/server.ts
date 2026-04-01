@@ -104,7 +104,11 @@ export function createReviewApp(options: ReviewServerOptions): express.Applicati
       ...spec,
       mapping_results: spec.mapping_results.map(r => ({ ...r, review_status: 'approved' as const })),
     };
-    saveSpec(specsDir, updated);
+    try {
+      saveSpec(specsDir, updated);
+    } catch {
+      return res.status(500).json({ error: 'Failed to write spec' });
+    }
     res.json({ ok: true, template_id: req.params.id });
   });
 
@@ -126,7 +130,11 @@ export function createReviewApp(options: ReviewServerOptions): express.Applicati
       status: 'needs_review',
       review_notes: note ?? spec.review_notes,
     };
-    saveSpec(specsDir, updated);
+    try {
+      saveSpec(specsDir, updated);
+    } catch {
+      return res.status(500).json({ error: 'Failed to write spec' });
+    }
     res.json({ ok: true, template_id: req.params.id });
   });
 
@@ -135,17 +143,21 @@ export function createReviewApp(options: ReviewServerOptions): express.Applicati
     const specs = loadSpecs(specsDir);
     let count = 0;
 
-    specs.forEach(spec => {
+    for (const spec of specs) {
       const allExact = spec.mapping_results.every(r => r.match_type === 'exact' && r.confidence >= 1.0);
       if (allExact || spec.status === 'ready') {
         const updated: CanonicalTemplate = {
           ...spec,
           mapping_results: spec.mapping_results.map(r => ({ ...r, review_status: 'approved' as const })),
         };
-        saveSpec(specsDir, updated);
-        count++;
+        try {
+          saveSpec(specsDir, updated);
+          count++;
+        } catch {
+          // skip invalid template_id, continue with others
+        }
       }
-    });
+    }
 
     res.json({ ok: true, approved: count });
   });
@@ -164,7 +176,10 @@ export function createReviewApp(options: ReviewServerOptions): express.Applicati
   app.get('/api/guidelines', (_req, res) => {
     let raw = '';
     if (fs.existsSync(skillFile)) {
-      try { raw = fs.readFileSync(skillFile, 'utf-8'); } catch { /* skip */ }
+      try { raw = fs.readFileSync(skillFile, 'utf-8'); } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code !== 'ENOENT') console.error(`[guidelines] Failed to read ${skillFile}:`, err);
+      }
     }
     res.json(parseGuidelines(raw));
   });

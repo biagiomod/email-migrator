@@ -3,11 +3,13 @@ import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CanonicalTemplate } from '../schemas/canonical-template';
+import { parseGuidelines } from './guidelines';
 
 export interface ReviewServerOptions {
   specsDir: string;
   sourceDir: string;
   port: number;
+  skillFile?: string; // defaults to process.cwd()/SKILL.md
 }
 
 function loadSpecs(specsDir: string): CanonicalTemplate[] {
@@ -24,19 +26,22 @@ function loadSpecs(specsDir: string): CanonicalTemplate[] {
   return results;
 }
 
-function saveSpec(specsDir: string, template: CanonicalTemplate): void {
-  const specPath = path.join(specsDir, `${template.template_id}.json`);
-  fs.writeFileSync(specPath, JSON.stringify(template, null, 2), 'utf-8');
-}
-
 function safeSpecPath(specsDir: string, id: string): string | null {
   const resolved = path.resolve(specsDir, `${id}.json`);
   if (!resolved.startsWith(path.resolve(specsDir) + path.sep)) return null;
   return resolved;
 }
 
-export function startReviewServer(options: ReviewServerOptions): void {
-  const { specsDir, sourceDir, port } = options;
+// KI-001 fix: use safeSpecPath for the write path
+function saveSpec(specsDir: string, template: CanonicalTemplate): void {
+  const specPath = safeSpecPath(specsDir, template.template_id);
+  if (!specPath) throw new Error(`Invalid template_id for write: ${template.template_id}`);
+  fs.writeFileSync(specPath, JSON.stringify(template, null, 2), 'utf-8');
+}
+
+export function createReviewApp(options: ReviewServerOptions): express.Application {
+  const { specsDir, sourceDir } = options;
+  const skillFile = options.skillFile ?? path.join(process.cwd(), 'SKILL.md');
   const app = express();
   app.use(express.json());
 
@@ -145,9 +150,35 @@ export function startReviewServer(options: ReviewServerOptions): void {
     res.json({ ok: true, approved: count });
   });
 
-  app.listen(port, () => {
-    console.log(`\n✓ Review UI running at http://localhost:${port}`);
-    console.log(`  Reviewing specs in: ${specsDir}`);
+  // GET /dashboard — serve dashboard placeholder
+  app.get('/dashboard', (_req, res) => {
+    res.sendFile(path.resolve(__dirname, 'ui/dashboard.html'));
+  });
+
+  // GET /editor — serve editor placeholder
+  app.get('/editor', (_req, res) => {
+    res.sendFile(path.resolve(__dirname, 'ui/editor.html'));
+  });
+
+  // GET /api/guidelines — reads SKILL.md at request time, returns parsed guidelines
+  app.get('/api/guidelines', (_req, res) => {
+    let raw = '';
+    if (fs.existsSync(skillFile)) {
+      try { raw = fs.readFileSync(skillFile, 'utf-8'); } catch { /* skip */ }
+    }
+    res.json(parseGuidelines(raw));
+  });
+
+  return app;
+}
+
+export function startReviewServer(options: ReviewServerOptions): void {
+  const app = createReviewApp(options);
+  app.listen(options.port, () => {
+    console.log(`\n✓ Review UI running at http://localhost:${options.port}`);
+    console.log(`  Original review:   http://localhost:${options.port}/`);
+    console.log(`  Content Designer:  http://localhost:${options.port}/dashboard`);
+    console.log(`  Reviewing specs in: ${options.specsDir}`);
     console.log(`  Press Ctrl+C to stop.\n`);
   });
 }

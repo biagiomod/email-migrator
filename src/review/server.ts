@@ -2,6 +2,7 @@
 import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as cheerio from 'cheerio';
 import { CanonicalTemplate } from '../schemas/canonical-template';
 import { parseGuidelines } from './guidelines';
 
@@ -170,6 +171,134 @@ export function createReviewApp(options: ReviewServerOptions): express.Applicati
   // GET /editor — serve editor placeholder
   app.get('/editor', (_req, res) => {
     res.sendFile(path.resolve(__dirname, 'ui/editor.html'));
+  });
+
+  // GET /api/specs — summary list for the dashboard queue
+  app.get('/api/specs', (_req, res) => {
+    const specs = loadSpecs(specsDir);
+    res.json(specs.map(t => ({
+      template_id: t.template_id,
+      source_file: path.basename(t.source_file),
+      status: t.status,
+      reviewed_by: t.reviewed_by,
+      reviewed_at: t.reviewed_at,
+      editor_status: t.editor_status,
+    })));
+  });
+
+  // GET /api/spec/:id — full spec JSON
+  app.get('/api/spec/:id', (req, res) => {
+    const specPath = safeSpecPath(specsDir, req.params.id);
+    if (!specPath) return res.status(400).json({ error: 'Invalid id' });
+    if (!fs.existsSync(specPath)) return res.status(404).json({ error: 'Not found' });
+    try {
+      res.json(JSON.parse(fs.readFileSync(specPath, 'utf-8')));
+    } catch {
+      res.status(500).json({ error: 'Failed to read spec' });
+    }
+  });
+
+  // PATCH /api/spec/:id — save reviewer edits + annotation
+  app.patch('/api/spec/:id', (req, res) => {
+    const specPath = safeSpecPath(specsDir, req.params.id);
+    if (!specPath) return res.status(400).json({ error: 'Invalid id' });
+    if (!fs.existsSync(specPath)) return res.status(404).json({ error: 'Not found' });
+
+    let spec: CanonicalTemplate;
+    try {
+      spec = JSON.parse(fs.readFileSync(specPath, 'utf-8')) as CanonicalTemplate;
+    } catch {
+      return res.status(500).json({ error: 'Failed to read spec' });
+    }
+
+    const { reviewed_by, blocks } = req.body as {
+      reviewed_by?: string;
+      blocks?: Array<{ id: string; edited_value: string }>;
+    };
+
+    const now = new Date().toISOString();
+    const blockEdits = new Map((blocks ?? []).map(b => [b.id, b.edited_value]));
+
+    const updated: CanonicalTemplate = {
+      ...spec,
+      reviewed_by: reviewed_by ?? spec.reviewed_by,
+      reviewed_at: now,
+      content_blocks: spec.content_blocks.map(cb => {
+        const editedValue = blockEdits.get(cb.id);
+        if (editedValue === undefined) return cb;
+        return { ...cb, edited_value: editedValue, edited_by: reviewed_by, edited_at: now };
+      }),
+    };
+
+    try {
+      saveSpec(specsDir, updated);
+    } catch {
+      return res.status(500).json({ error: 'Failed to write spec' });
+    }
+    res.json({ ok: true, template_id: req.params.id });
+  });
+
+  // GET /api/spec/:id/preview — annotated HTML with data-block-id attributes and postMessage script
+  app.get('/api/spec/:id/preview', (req, res) => {
+    const specPath = safeSpecPath(specsDir, req.params.id);
+    if (!specPath) return res.status(400).json({ error: 'Invalid id' });
+    if (!fs.existsSync(specPath)) return res.status(404).json({ error: 'Not found' });
+
+    let spec: CanonicalTemplate;
+    try {
+      spec = JSON.parse(fs.readFileSync(specPath, 'utf-8')) as CanonicalTemplate;
+    } catch {
+      return res.status(500).json({ error: 'Failed to read spec' });
+    }
+
+    const sourceFile = path.join(sourceDir, path.basename(spec.source_file));
+    if (!fs.existsSync(sourceFile)) {
+      return res.status(404).json({ error: 'Source HTML not found' });
+    }
+
+    let html: string;
+    try {
+      html = fs.readFileSync(sourceFile, 'utf-8');
+    } catch {
+      return res.status(500).json({ error: 'Failed to read source HTML' });
+    }
+
+    const $ = cheerio.load(html);
+
+    for (const cb of spec.content_blocks) {
+      const needle = cb.text.trim();
+      if (!needle) continue;
+      $('body *').each((_i, el) => {
+        if (el.type !== 'tag') return;
+        const $el = $(el as cheerio.TagElement);
+        if ($el.children().length > 0) return;
+        const text = $el.text().trim();
+        if (text === needle) {
+          $el.attr('data-block-id', cb.id);
+          $el.css('cursor', 'pointer');
+        }
+      });
+    }
+
+    const script = `<script>
+document.addEventListener('click', function(e) {
+  var el = e.target;
+  while (el && !el.dataset.blockId) el = el.parentElement;
+  if (el && el.dataset.blockId) {
+    window.parent.postMessage({ type: 'block-click', blockId: el.dataset.blockId }, '*');
+  }
+});
+</script>`;
+
+    let annotated = $.html();
+    if (annotated.includes('</body>')) {
+      annotated = annotated.replace('</body>', script + '\n</body>');
+    } else {
+      annotated += script;
+    }
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(annotated);
   });
 
   // GET /api/guidelines — reads SKILL.md at request time, returns parsed guidelines

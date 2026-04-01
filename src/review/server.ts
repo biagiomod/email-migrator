@@ -6,6 +6,17 @@ import * as cheerio from 'cheerio';
 import { CanonicalTemplate } from '../schemas/canonical-template';
 import { parseGuidelines } from './guidelines';
 
+interface PipelineState {
+  state: 'idle' | 'running' | 'done' | 'error';
+  startedAt?: string;
+  finishedAt?: string;
+  total?: number;
+  ready?: number;
+  needsReview?: number;
+  blocked?: number;
+  error?: string;
+}
+
 export interface ReviewServerOptions {
   specsDir: string;
   sourceDir: string;
@@ -43,6 +54,7 @@ function saveSpec(specsDir: string, template: CanonicalTemplate): void {
 export function createReviewApp(options: ReviewServerOptions): express.Application {
   const { specsDir, sourceDir } = options;
   const skillFile = options.skillFile ?? path.join(process.cwd(), 'SKILL.md');
+  const pipelineState: PipelineState = { state: 'idle' };
   const app = express();
   app.use(express.json());
 
@@ -326,6 +338,72 @@ document.addEventListener('click', function(e) {
       }
     }
     res.json(parseGuidelines(raw));
+  });
+
+  // GET /api/pipeline/status
+  app.get('/api/pipeline/status', (_req, res) => {
+    res.json(pipelineState);
+  });
+
+  // POST /api/pipeline/run — spawn pipeline as child process
+  app.post('/api/pipeline/run', (req, res) => {
+    if (pipelineState.state === 'running') {
+      return res.status(409).json({ error: 'Pipeline already running' });
+    }
+
+    const body = req.body as { sourceDir?: string; specsDir?: string };
+    const runSourceDir = body.sourceDir ?? sourceDir;
+    const runSpecsDir = body.specsDir ?? specsDir;
+
+    pipelineState.state = 'running';
+    pipelineState.startedAt = new Date().toISOString();
+    pipelineState.finishedAt = undefined;
+    pipelineState.total = undefined;
+    pipelineState.ready = undefined;
+    pipelineState.needsReview = undefined;
+    pipelineState.blocked = undefined;
+    pipelineState.error = undefined;
+
+    const { spawn } = require('child_process') as typeof import('child_process');
+    const tsxBin = require.resolve('tsx/cli');
+    const cliScript = path.resolve(__dirname, '../../cli/index.ts');
+
+    const child = spawn(
+      process.execPath,
+      [tsxBin, cliScript, 'run', '--source', runSourceDir, '--specs', runSpecsDir],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+
+    const output: string[] = [];
+    child.stdout?.on('data', (d: Buffer) => output.push(d.toString()));
+    child.stderr?.on('data', (d: Buffer) => output.push(d.toString()));
+
+    child.on('close', (code: number | null) => {
+      pipelineState.finishedAt = new Date().toISOString();
+      const joined = output.join('');
+      const total = parseInt((joined.match(/Total:\s+(\d+)/) ?? [])[1] ?? '0', 10);
+      const ready = parseInt((joined.match(/Ready:\s+(\d+)/) ?? [])[1] ?? '0', 10);
+      const needsReview = parseInt((joined.match(/Needs review:\s+(\d+)/) ?? [])[1] ?? '0', 10);
+      const blocked = parseInt((joined.match(/Blocked:\s+(\d+)/) ?? [])[1] ?? '0', 10);
+      if (code === 0 || code === 1) {
+        pipelineState.state = 'done';
+        pipelineState.total = total;
+        pipelineState.ready = ready;
+        pipelineState.needsReview = needsReview;
+        pipelineState.blocked = blocked;
+      } else {
+        pipelineState.state = 'error';
+        pipelineState.error = joined.slice(-500);
+      }
+    });
+
+    child.on('error', (err: Error) => {
+      pipelineState.state = 'error';
+      pipelineState.error = err.message;
+      pipelineState.finishedAt = new Date().toISOString();
+    });
+
+    res.json({ ok: true, message: 'Pipeline started' });
   });
 
   return app;

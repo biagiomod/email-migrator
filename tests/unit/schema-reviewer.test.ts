@@ -37,7 +37,7 @@ describe('reviewer annotation fields', () => {
     expect(result.success).toBe(false);
   });
 
-  it('accepts a content block with edited_value fields', () => {
+  it('accepts a content block with all edited annotation fields', () => {
     const result = ContentBlock.safeParse({
       id: 'test-01:headline:0',
       type: 'headline',

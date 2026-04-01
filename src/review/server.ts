@@ -3,6 +3,7 @@ import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as cheerio from 'cheerio';
+import { spawn } from 'child_process';
 import { CanonicalTemplate } from '../schemas/canonical-template';
 import { parseGuidelines } from './guidelines';
 
@@ -351,10 +352,6 @@ document.addEventListener('click', function(e) {
       return res.status(409).json({ error: 'Pipeline already running' });
     }
 
-    const body = req.body as { sourceDir?: string; specsDir?: string };
-    const runSourceDir = body.sourceDir ?? sourceDir;
-    const runSpecsDir = body.specsDir ?? specsDir;
-
     pipelineState.state = 'running';
     pipelineState.startedAt = new Date().toISOString();
     pipelineState.finishedAt = undefined;
@@ -364,9 +361,12 @@ document.addEventListener('click', function(e) {
     pipelineState.blocked = undefined;
     pipelineState.error = undefined;
 
-    const { spawn } = require('child_process') as typeof import('child_process');
+    const body = req.body as { sourceDir?: string; specsDir?: string };
+    const runSourceDir = body.sourceDir ?? sourceDir;
+    const runSpecsDir = body.specsDir ?? specsDir;
+
     const tsxBin = require.resolve('tsx/cli');
-    const cliScript = path.resolve(__dirname, '../../cli/index.ts');
+    const cliScript = path.resolve(__dirname, '../cli/index.ts');
 
     const child = spawn(
       process.execPath,
